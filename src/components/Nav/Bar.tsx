@@ -1,11 +1,11 @@
 import * as React from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 import useAuth from "../../core/AuthContext";
 import usePageLoading from "../../core/LoadingContext";
 import Logo from "./Logo";
-import SerachBar from "./SerachBar";
+import SearchBar from "./SearchBar";
 import Button from "./Button";
 
 const Bar: React.FC = () => {
@@ -40,9 +40,7 @@ const Bar: React.FC = () => {
           <Logo />
         </div>
 
-        <div className="flex-1 flex justify-center">
-          <SerachBar />
-        </div>
+        <div className="flex-1 flex justify-center">{/*<SearchBar />*/}</div>
 
         <div className="flex items-center gap-3">
           {auth.isAuthenticated ? (

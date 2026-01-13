@@ -55,31 +55,24 @@ if (!is_dir($lockDir)) {
 // --------------------------------------------------
 $lockFile = $lockDir . "/{$streamKey}.lock";
 
-if (file_exists($lockFile) && time() - filemtime($lockFile) < 55) {
+if (file_exists($lockFile) && time() - filemtime($lockFile) < 10) {
   http_response_code(200);
   exit;
 }
 touch($lockFile);
 
 // --------------------------------------------------
-// 6) Take screenshot from HLS (async + safe)
+// 6) Take screenshot from RTMP
 // --------------------------------------------------
-// HLS path: adjust this to your actual HLS output folder
-$hlsPath = "/var/www/hls/{$streamKey}.m3u8";
 
 $screenshotPath = "$saveDir/{$streamKey}.jpg";
+$cmd = sprintf(
+  'timeout 5 ffmpeg -y -i rtmp://localhost/live/%s -frames:v 1 -q:v 3 %s',
+  escapeshellarg($streamKey),
+  escapeshellarg($screenshotPath)
+);
 
-// Only attempt if HLS file exists
-if (file_exists($hlsPath)) {
-  $cmd = sprintf(
-    'timeout 5 ffmpeg -y -loglevel error -i %s -frames:v 1 -q:v 3 %s > /dev/null 2>&1 &',
-    escapeshellarg($hlsPath),
-    escapeshellarg($screenshotPath)
-  );
+exec($cmd);
 
-  exec($cmd);
-}
-
-// --------------------------------------------------
 http_response_code(200);
 echo "OK";

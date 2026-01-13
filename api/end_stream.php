@@ -59,6 +59,5 @@ if ($stmt->execute([':id' => $stream["id"]])) {
   exit;
 }
 
-
 http_response_code(500);
 echo "Something went wrong";

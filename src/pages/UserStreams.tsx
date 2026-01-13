@@ -286,13 +286,13 @@ const UserStreams: React.FC = () => {
                       type="text"
                       value={stream.name}
                       disabled
-                      className={`${inputBaseStyle} rounded-l-md w-[200px] mr-2`}
+                      className={`${inputBaseStyle} rounded-l-md w-[150px] mr-2`}
                     />
                     <input
                       type="text"
                       value={`Views: ${stream.views}`}
                       disabled
-                      className={`${inputBaseStyle} rounded-l-md w-[170px] mr-2`}
+                      className={`${inputBaseStyle} rounded-l-md w-[150px] mr-2`}
                     />
                     <input
                       type="text"
@@ -300,7 +300,7 @@ const UserStreams: React.FC = () => {
                         stream.live_viewers ? stream.live_viewers : 0
                       }`}
                       disabled
-                      className={`${inputBaseStyle} rounded-l-md w-[170px] mr-2`}
+                      className={`${inputBaseStyle} rounded-l-md w-[150px] mr-2`}
                     />
                     <input
                       type="text"

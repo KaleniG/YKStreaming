@@ -1,43 +1,36 @@
 import * as React from "react";
 
 export function useStreamThumbnail(
-  thmbnailUrl: string,
-  intervalMs: number = 45000
+  thumbnailUrl: string,
+  intervalMs: number = 5000
 ) {
   const [exists, setExists] = React.useState<boolean>(false);
 
   React.useEffect(() => {
     let isMounted = true;
 
-    const fetchStreams = async () => {
-      const res = new Promise((resolve) => {
+    const checkThumbnail = async () => {
+      const res = await new Promise<boolean>((resolve) => {
         const img = new Image();
-
         img.onload = () => resolve(true);
         img.onerror = () => resolve(false);
 
-        img.src = thmbnailUrl;
+        img.src = `http://localhost/stream_screenshots/${thumbnailUrl}.jpg`;
       });
 
-      res.then((res) => {
-        if (isMounted) {
-          setExists((prev) => (res ? true : prev));
-        }
-      });
+      if (isMounted) {
+        setExists(res);
+      }
     };
 
-    // Initial fetch
-    fetchStreams();
+    checkThumbnail();
+    const interval = setInterval(checkThumbnail, intervalMs);
 
-    // Set up interval
-    const interval = setInterval(fetchStreams, intervalMs);
-
-    // Cleanup
     return () => {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [intervalMs]);
+  }, [thumbnailUrl, intervalMs]);
 
   return { exists };
 }
