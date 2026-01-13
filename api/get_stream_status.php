@@ -37,10 +37,10 @@ $pdo = getConn();
 $stmt = $pdo->prepare("SELECT (active = TRUE AND ended_at IS NULL) AS is_live, is_vod FROM streams WHERE key = :stream_key");
 $stmt->execute([":stream_key" => $streamKey]);
 
-$result = $stmt->fetch(PDO::FETCH_ASSOC);
+$stream = $stmt->fetch(PDO::FETCH_ASSOC);
 
-if ($result) {
-  echo json_encode(["success" => true, "exists" => true, "is_live" => $result["is_live"], "is_vod" => $result["is_vod"]]);
+if ($stream) {
+  echo json_encode(["success" => true, "exists" => true, "is_live" => $stream["is_live"], "is_vod" => $stream["is_vod"]]);
 } else {
   echo json_encode(["success" => true, "exists" => false]);
 }

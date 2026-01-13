@@ -20,7 +20,6 @@ if (!$stream) {
   exit;
 }
 
-
 $path = "/var/www/recordings";
 $files = glob("{$path}/{$streamKey}*.flv");
 if (!$files) {
@@ -48,12 +47,18 @@ if (!$stream["is_vod"]) {
   }
 }
 
+$stmt = $pdo->prepare("DELETE FROM views WHERE stream_id = :stream_id");
+$stmt->execute([
+  ":stream_id" => $stream["id"]
+]);
+
 $stmt = $pdo->prepare("UPDATE streams SET ended_at = NOW(), active = FALSE WHERE id = :id");
 if ($stmt->execute([':id' => $stream["id"]])) {
   http_response_code(200);
   echo "OK";
   exit;
 }
+
 
 http_response_code(500);
 echo "Something went wrong";

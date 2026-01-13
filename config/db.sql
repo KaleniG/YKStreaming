@@ -21,7 +21,7 @@ CREATE TABLE streams (
   views INTEGER DEFAULT 0,
   started_at TIMESTAMPTZ,
   ended_at TIMESTAMPTZ,
-  user_id SERIAL NOT NULL,
+  user_id INT NOT NULL,
   
   CONSTRAINT fk_stream_user_id FOREIGN KEY (user_id) REFERENCES users(id)
 );
@@ -30,11 +30,24 @@ DROP TABLE IF EXISTS views CASCADE;
 CREATE TABLE views (
   id SERIAL PRIMARY KEY,
   
-  user_id SERIAL,
-  stream_id SERIAL NOT NULL,
+  watching BOOLEAN DEFAULT TRUE,
+
+  guest_token TEXT,
+  user_id INT,
+  stream_id INT NOT NULL,
   
   CONSTRAINT fk_view_user_id FOREIGN KEY (user_id) REFERENCES users(id),
   CONSTRAINT fk_view_stream_id FOREIGN KEY (stream_id) REFERENCES streams(id)
 );
+
+-- logged-in users
+CREATE UNIQUE INDEX uniq_user_stream
+ON views(user_id, stream_id)
+WHERE user_id IS NOT NULL;
+
+-- guests
+CREATE UNIQUE INDEX uniq_guest_stream
+ON views(guest_token, stream_id)
+WHERE guest_token IS NOT NULL;
 
 COMMIT;

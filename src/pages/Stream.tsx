@@ -1,11 +1,14 @@
 import * as React from "react";
 import { useParams } from "react-router-dom";
+import axios from "axios";
 import VideoPlayer from "../components/VideoPlayer";
 import { useStreamStatus } from "@/hooks/useStreamStatus";
 
 const Stream: React.FC = () => {
   const { streamKey } = useParams<{ streamKey: string }>();
   const { exists, isLive, isVOD } = useStreamStatus(streamKey);
+
+  const viewerRegisteredRef = React.useRef(false);
 
   if (!streamKey) {
     return <div className="pt-16 text-zinc-700">Invalid stream</div>;
@@ -33,6 +36,35 @@ const Stream: React.FC = () => {
     return [];
   }, [streamKey, isLive, isVOD]);
 
+  React.useEffect(() => {
+    if (!streamKey) return;
+
+    const registerViewer = async () => {
+      try {
+        await axios.post(
+          "http://localhost/api/register_viewer.php",
+          { key: streamKey },
+          { withCredentials: true }
+        );
+        viewerRegisteredRef.current = true;
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    registerViewer();
+
+    return () => {
+      if (viewerRegisteredRef.current) {
+        void axios.post(
+          "http://localhost/api/unregister_viewer.php",
+          { key: streamKey },
+          { withCredentials: true }
+        );
+      }
+    };
+  }, [streamKey]);
+
   const videoJsOptions = React.useMemo(
     () => ({
       autoplay: true,
@@ -58,8 +90,6 @@ const Stream: React.FC = () => {
           <VideoPlayer
             options={videoJsOptions}
             onReady={(player) => {
-              player.on("playing", () => console.log("🔴 LIVE"));
-              player.on("waiting", () => console.log("⏳ BUFFERING"));
               player.on("error", () => {
                 setTimeout(() => {
                   player.src(videoJsOptions.sources);

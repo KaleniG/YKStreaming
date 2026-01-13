@@ -72,6 +72,12 @@ if ($streamToRemove) {
       "http://localhost:8080/control/drop/publisher?app=live&name={$key}"
     );
   }
+
+  $stmt = $pdo->prepare("DELETE FROM views WHERE stream_id = :stream_id");
+  $stmt->execute([
+    ":stream_id" => $streamToRemove["id"]
+  ]);
+
   $stmt = $pdo->prepare("DELETE FROM streams WHERE id = :stream_id AND user_id = :user_id");
   $stmt->execute([
     ":stream_id" => $streamToRemove["id"],

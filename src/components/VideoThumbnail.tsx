@@ -12,6 +12,7 @@ interface Stream {
   is_live: boolean;
   is_vod: boolean;
   streamer_name: string;
+  live_viewers: number;
 }
 
 interface VideoThumbnailProps {
@@ -25,14 +26,14 @@ const VideoThumbnail: React.FC<VideoThumbnailProps> = ({ stream }) => {
     <Link
       key={stream.key}
       to={`/stream/${stream.key}`}
-      className="group block rounded-md overflow-hidden bg-gradient-to-b from-zinc-100 to-zinc-200 shadow-[0_2px_4px_rgba(0,0,0,0.1)] hover:shadow-[0_4px_6px_rgba(0,0,0,0.15)] transition-all duration-200 select-none"
+      className="group block rounded-md overflow-hidden bg-gradient-to-b from-zinc-100 to-zinc-200 shadow-[0_2px_4px_rgba(0,0,0,0.1)] hover:shadow-[0_4px_6px_rgba(0,0,0,0.15)] transition-all duration-200 select-none mb-6"
     >
       <img
         src={
           stream.uses_thumbnail
             ? `http://localhost/thumbnails/${stream.key}.${stream.thumbnail_format}`
             : exists
-            ? `http://localhost/"stream_screenshots/${stream.key}.jpg`
+            ? `http://localhost/stream_screenshots/${stream.key}.jpg`
             : DefaultThumbnail
         }
         alt={`${stream.streamer_name} screenshot`}
@@ -45,7 +46,10 @@ const VideoThumbnail: React.FC<VideoThumbnailProps> = ({ stream }) => {
         <h3 className="text-sm font-medium text-zinc-900 truncate">
           {stream.streamer_name}
         </h3>
-        <h4>{stream.is_live ? "Live" : stream.is_vod ? "VOD" : null}</h4>
+        <h4 className={stream.is_live ? "visible" : "invisible"}>
+          <span className="w-3 h-3 rounded-full mr-2 bg-red-400 inline-block" />
+          {`${stream.live_viewers ? stream.live_viewers : 0} viewers`}
+        </h4>
       </div>
     </Link>
   );

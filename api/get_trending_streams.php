@@ -18,18 +18,23 @@ include "conn.php";
 $pdo = getConn();
 
 $stmt = $pdo->prepare(
-  "SELECT 
-  u.name AS streamer_name, 
-  s.key AS key, 
-  s.name AS name, 
-  s.has_custom_thumbnail AS uses_thumbnail, 
-  s.thumbnail_format AS thumbnail_format,
+  "SELECT
+  u.name AS streamer_name,
+  s.key,
+  s.name,
+  s.has_custom_thumbnail AS uses_thumbnail,
+  s.thumbnail_format,
   (s.active = TRUE AND s.ended_at IS NULL) AS is_live,
-  s.is_vod AS is_vod
-  FROM streams AS s JOIN users AS u ON s.user_id = u.id
-  WHERE (s.active = TRUE AND s.ended_at IS NULL) OR (s.is_vod = TRUE AND s.ended_at IS NOT NULL)"
+  s.is_vod,
+  COUNT(v.id) FILTER ( WHERE v.watching = TRUE) AS live_viewers
+  FROM streams s
+  JOIN users u ON s.user_id = u.id
+  LEFT JOIN views v ON v.stream_id = s.id
+  WHERE (s.active = TRUE AND s.ended_at IS NULL) OR (s.is_vod = TRUE AND s.ended_at IS NOT NULL)
+  GROUP BY s.id, u.name"
 ); // LAWLESSNESS GOING ON HERE
 
 $stmt->execute();
 $streams = $stmt->fetchAll();
+
 echo json_encode(["success" => true, "streams" => $streams]);

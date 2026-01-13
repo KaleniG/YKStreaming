@@ -36,6 +36,22 @@ if (!isset($_SESSION['user_id'])) {
 }
 $pdo = getConn();
 
-$stmt = $pdo->prepare("SELECT name, key, active, ended_at FROM streams WHERE user_id = :user_id");
+$stmt = $pdo->prepare(
+  "SELECT
+  s.name,
+  s.key,
+  s.active,
+  s.ended_at,
+  s.views,
+  COUNT(v.id) FILTER (WHERE v.watching = TRUE) AS live_viewers
+  FROM streams s
+  LEFT JOIN views v ON v.stream_id = s.id
+  WHERE s.user_id = :user_id
+  GROUP BY s.id
+  ORDER BY s.id DESC"
+);
+
 $stmt->execute([":user_id" => $_SESSION["user_id"]]);
-echo json_encode(["success" => true, "streams" => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+$streams = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+echo json_encode(["success" => true, "streams" => $streams]);

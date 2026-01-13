@@ -16,6 +16,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 include __DIR__ . "/conn.php";
 $pdo = getConn();
 
+function generateToken($length = 32)
+{
+  $bytes = random_bytes($length);
+  return bin2hex($bytes);
+}
+
 function json_error($msg, $code = 400)
 {
   http_response_code($code);
@@ -48,6 +54,8 @@ if (isset($_SESSION['user_id'])) {
     $_SESSION['user_id'] = $user['id'];
     $response = ['success' => true, 'logged_in' => true, 'user' => $user];
   }
+} elseif (!isset($_COOKIE["guest_token"])) {
+  setcookie("guest_token", generateToken(), time() + 262746000, "/", "", false, true);
 }
 
 header('Content-Type: application/json');
