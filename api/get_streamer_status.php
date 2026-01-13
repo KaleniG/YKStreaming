@@ -14,7 +14,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 include "conn.php";
-
 function getUserByRememberToken(string $token)
 {
   $pdo = getConn();
@@ -43,6 +42,7 @@ $stmt = $pdo->prepare(
   s.active,
   s.ended_at,
   s.views,
+  s.is_vod,
   COUNT(v.id) FILTER (WHERE v.watching = TRUE) AS live_viewers
   FROM streams s
   LEFT JOIN views v ON v.stream_id = s.id

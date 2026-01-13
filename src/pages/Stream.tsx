@@ -15,10 +15,19 @@ const Stream: React.FC = () => {
   }
 
   const sources = React.useMemo(() => {
+    if (isLive && isVOD) {
+      return [
+        {
+          src: `http://localhost/hls/vodlive/${streamKey}.m3u8`,
+          type: "application/x-mpegURL",
+        },
+      ];
+    }
+
     if (isLive) {
       return [
         {
-          src: `http://localhost/hls/${streamKey}.m3u8`,
+          src: `http://localhost/hls/live/${streamKey}.m3u8`,
           type: "application/x-mpegURL",
         },
       ];

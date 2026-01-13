@@ -190,6 +190,7 @@ const UserStreams: React.FC = () => {
                           key: res.data.new_key,
                           active: false,
                           name: newStreamName,
+                          is_vod: isVod,
                         },
                       ]);
                       setShowAddModal(false);
@@ -228,29 +229,6 @@ const UserStreams: React.FC = () => {
             </span>
           </div>
 
-          {/* Stream Link */}
-          <label className="block text-zinc-700 font-medium mb-2 select-none">
-            Stream Link
-          </label>
-          <div className="inline-flex items-center relative mb-4">
-            <input
-              type="text"
-              value="rtmp://localhost/live"
-              disabled
-              className={`${inputBaseStyle} rounded-l-md w-[350px]`}
-            />
-            <button
-              onClick={() => copyToClipboard("rtmp://localhost/live", "link")}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-700"
-            >
-              {copiedKeys["link"] ? (
-                <IoCopy size={18} />
-              ) : (
-                <IoCopyOutline size={18} />
-              )}
-            </button>
-          </div>
-
           {/* Stream Keys Header with "+" button */}
           <div className="flex items-center justify-between mb-4">
             <label className="text-zinc-700 font-medium select-none flex items-center">
@@ -268,11 +246,8 @@ const UserStreams: React.FC = () => {
           {streams.length > 0 && (
             <div className="max-h-72 w-min overflow-y-auto border border-zinc-400 pt-3 pr-3 pl-3 pb-1">
               {streams.map((stream) => (
-                <div className="flex">
-                  <div
-                    className="inline-flex items-center relative mb-2"
-                    key={stream.key}
-                  >
+                <div className="flex" key={stream.key}>
+                  <div className="inline-flex items-center relative mb-2 mr-2">
                     <span
                       className={`mr-3 w-3 h-3 rounded-full mr-2 ${
                         stream.active
@@ -286,13 +261,13 @@ const UserStreams: React.FC = () => {
                       type="text"
                       value={stream.name}
                       disabled
-                      className={`${inputBaseStyle} rounded-l-md w-[150px] mr-2`}
+                      className={`${inputBaseStyle} rounded-l-md w-[125px] mr-2`}
                     />
                     <input
                       type="text"
                       value={`Views: ${stream.views}`}
                       disabled
-                      className={`${inputBaseStyle} rounded-l-md w-[150px] mr-2`}
+                      className={`${inputBaseStyle} rounded-l-md w-[125px] mr-2`}
                     />
                     <input
                       type="text"
@@ -300,7 +275,7 @@ const UserStreams: React.FC = () => {
                         stream.live_viewers ? stream.live_viewers : 0
                       }`}
                       disabled
-                      className={`${inputBaseStyle} rounded-l-md w-[150px] mr-2`}
+                      className={`${inputBaseStyle} rounded-l-md w-[125px] mr-2`}
                     />
                     <input
                       type="text"
@@ -308,18 +283,45 @@ const UserStreams: React.FC = () => {
                       disabled
                       className={`${inputBaseStyle} rounded-l-md`}
                     />
-                    {!stream.ended_at ? (
-                      <button
-                        onClick={() => copyToClipboard(stream.key, stream.key)}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-700"
-                      >
-                        {copiedKeys[stream.key] ? (
-                          <IoCopy size={18} />
-                        ) : (
-                          <IoCopyOutline size={18} />
-                        )}
-                      </button>
-                    ) : null}
+                    <button
+                      onClick={() => copyToClipboard(stream.key, stream.key)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-700"
+                    >
+                      {copiedKeys[stream.key] ? (
+                        <IoCopy size={18} />
+                      ) : (
+                        <IoCopyOutline size={18} />
+                      )}
+                    </button>
+                  </div>
+                  <div className="inline-flex items-center relative mb-2">
+                    <input
+                      type="text"
+                      value={
+                        stream.is_vod
+                          ? "rtmp://localhost/vodlive"
+                          : "rtmp://localhost/live"
+                      }
+                      disabled
+                      className={`${inputBaseStyle} rounded-l-md w-[200px]`}
+                    />
+                    <button
+                      onClick={() =>
+                        copyToClipboard(
+                          stream.is_vod
+                            ? "rtmp://localhost/vodlive"
+                            : "rtmp://localhost/live",
+                          "link"
+                        )
+                      }
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-700"
+                    >
+                      {copiedKeys["link"] ? (
+                        <IoCopy size={18} />
+                      ) : (
+                        <IoCopyOutline size={18} />
+                      )}
+                    </button>
                   </div>
                   <button
                     onClick={() => removeStreamKey(stream.key)}
