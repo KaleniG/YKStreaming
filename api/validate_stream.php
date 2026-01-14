@@ -12,7 +12,6 @@ if (!$streamKey) {
 include "conn.php";
 $pdo = getConn();
 
-
 // Check if the stream key exists in your database
 $stmt = $pdo->prepare("SELECT id FROM streams WHERE key = :key AND active = FALSE AND ended_at IS NULL LIMIT 1");
 $stmt->execute([':key' => $streamKey]);

@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
   exit();
 }
 
-include "conn.php";
+include __DIR__ . "/conn.php";
 $pdo = getConn();
 
 function json_error($msg, $code = 400)

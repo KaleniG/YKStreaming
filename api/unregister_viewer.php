@@ -117,8 +117,6 @@ if (isset($_SESSION['user_id'])) {
   } else {
     json_error("Missing guest user view from 'views'");
   }
-} else {
-  json_error("How");
 }
 
 header('Content-Type: application/json');

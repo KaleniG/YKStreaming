@@ -15,10 +15,11 @@ if (!$streamKey || (isset($_POST['time']) && $_POST['time'] == 0)) {
 // --------------------------------------------------
 // 2) Connect to PostgreSQL
 // --------------------------------------------------
-include "conn.php";
+include __DIR__ . "/conn.php";
+include __DIR__ . "/utils.php";
 $pdo = getConn();
 
-$stmt = $pdo->prepare("SELECT id, active FROM streams WHERE key = :key LIMIT 1");
+$stmt = $pdo->prepare("SELECT id, is_vod, active FROM streams WHERE key = :key LIMIT 1");
 $stmt->execute([':key' => $streamKey]);
 $stream = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -35,6 +36,11 @@ if ($stream["active"] == false) {
   http_response_code(403);
   echo "Stream ended";
   exit;
+}
+
+// IN THE CASE THAT I WONT BE ABLE TO FIGURE OUT ANOTHER WAY
+if ($stream["is_vod"] && !file_exists("/var/www/recordings/{$streamKey}.flv")) {
+  call_api("http://localhost:8080/control/record/start?app={$app}&name={$streamKey}&rec=vod");
 }
 
 // --------------------------------------------------

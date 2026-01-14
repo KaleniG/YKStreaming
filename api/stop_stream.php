@@ -13,7 +13,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
   exit();
 }
 
-include "conn.php";
+include __DIR__ . "/conn.php";
+include __DIR__ . "/utils.php";
 
 function json_error($message, $code = 400)
 {
@@ -55,7 +56,7 @@ if (!$key) {
 }
 
 $pdo = getConn();
-$stmt = $pdo->prepare("SELECT id, active FROM streams WHERE key = :key_to_stop AND user_id = :user_id");
+$stmt = $pdo->prepare("SELECT id, active, is_vod FROM streams WHERE key = :key_to_stop AND user_id = :user_id");
 $stmt->execute([
   ":key_to_stop" => $key,
   ":user_id" => $_SESSION['user_id']
@@ -65,9 +66,10 @@ $streamToStop = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if ($streamToStop) {
   if ($streamToStop["active"]) {
-    file_get_contents(
-      "http://localhost:8080/control/drop/publisher?app=live&name={$key}"
-    );
+    if ($streamToStop["is_vod"] && file_exists("/var/www/recordings/{$key}.flv")) {
+      call_api("http://localhost:8080/control/record/stop?app=live&name={$key}&rec=vod");
+    }
+    call_api("http://localhost:8080/control/drop/publisher?app=live&name={$key}");
   }
 
   // Stop stream

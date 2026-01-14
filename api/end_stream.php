@@ -8,9 +8,10 @@ if (!$streamKey) {
 }
 
 include __DIR__ . "/conn.php";
+include __DIR__ . "/utils.php";
 $pdo = getConn();
 
-$stmt = $pdo->prepare("SELECT id FROM streams WHERE key = :key LIMIT 1");
+$stmt = $pdo->prepare("SELECT id, is_vod FROM streams WHERE key = :key LIMIT 1");
 $stmt->execute([':key' => $streamKey]);
 $stream = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -18,6 +19,10 @@ if (!$stream) {
   http_response_code(403);
   echo "Stream not found";
   exit;
+}
+
+if ($stream["is_vod"] && file_exists("/var/www/recordings/{$streamKey}.flv")) {
+  call_api("http://localhost:8080/control/record/stop?app=live&name={$streamKey}&rec=vod");
 }
 
 $stmt = $pdo->prepare("DELETE FROM views WHERE stream_id = :stream_id");
