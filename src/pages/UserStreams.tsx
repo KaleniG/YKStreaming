@@ -10,8 +10,13 @@ import {
   IoCopy,
   IoDocumentAttachOutline,
 } from "react-icons/io5";
+import useAuth from "@/core/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const UserStreams: React.FC = () => {
+  const statusAuth = useAuth();
+  const navigate = useNavigate();
+
   const { streamsState, streaming } = useStreamerStatus();
   const [streams, setStreams] = streamsState;
 
@@ -35,20 +40,30 @@ const UserStreams: React.FC = () => {
 
   const removeStreamKey = (keyToRemove: string) => {
     const fetchRemoveStreamKey = async () => {
-      const res = await axios.post<{ success: boolean }>(
-        "http://localhost/api/remove_stream.php",
-        { key: keyToRemove },
-        { withCredentials: true }
-      );
-      if (res.data.success) {
-        setStreams((prev) =>
-          prev.filter((stream) => stream.key !== keyToRemove)
+      try {
+        const res = await axios.post(
+          `http://localhost/api/user/streams/remove/${keyToRemove}`,
+          {},
+          { withCredentials: true }
         );
-        setCopiedKeys((prev) => {
-          const copy = { ...prev };
-          delete copy[keyToRemove];
-          return copy;
-        });
+        if (res.status == 200) {
+          setStreams((prev) =>
+            prev.filter((stream) => stream.key !== keyToRemove)
+          );
+          setCopiedKeys((prev) => {
+            const copy = { ...prev };
+            delete copy[keyToRemove];
+            return copy;
+          });
+        }
+      } catch (err: any) {
+        if (err?.response?.data) {
+          console.warn(err?.response?.data.error);
+        }
+        if (err.response?.status == 401) {
+          statusAuth.setAuthenticated(false)
+          navigate("/login")
+        }
       }
     };
     fetchRemoveStreamKey();
@@ -61,20 +76,30 @@ const UserStreams: React.FC = () => {
 
   const stopStream = (keyToStop: string) => {
     const fetchStopStream = async () => {
-      const res = await axios.post<{ success: boolean }>(
-        "http://localhost/api/stop_stream.php",
-        { key: keyToStop },
-        { withCredentials: true }
-      );
-      if (res.data.success) {
-        setStreams((prev) =>
-          prev.map((stream) => {
-            if (stream.key == keyToStop) {
-              stream.active = false;
-            }
-            return stream;
-          })
+      try {
+        const res = await axios.post(
+          `http://localhost/api/user/streams/stop/${keyToStop}`,
+          {},
+          { withCredentials: true }
         );
+        if (res.status == 200) {
+          setStreams((prev) =>
+            prev.map((stream) => {
+              if (stream.key == keyToStop) {
+                stream.active = false;
+              }
+              return stream;
+            })
+          );
+        }
+      } catch (err: any) {
+        if (err?.response?.data) {
+          console.warn(err?.response?.data.error);
+        }
+        if (err.response?.status == 401) {
+          statusAuth.setAuthenticated(false)
+          navigate("/login")
+        }
       }
     };
     fetchStopStream();
@@ -175,7 +200,7 @@ const UserStreams: React.FC = () => {
 
                   try {
                     const res = await axios.post(
-                      "http://localhost/api/add_stream.php",
+                      "http://localhost/api/user/streams/add",
                       formData,
                       {
                         withCredentials: true,
@@ -183,23 +208,46 @@ const UserStreams: React.FC = () => {
                       }
                     );
 
-                    if (res.data.success) {
-                      setStreams((prev) => [
-                        ...prev,
-                        {
-                          key: res.data.new_key,
-                          active: false,
-                          name: newStreamName,
-                          is_vod: isVod,
-                        },
-                      ]);
+                    if (res.data) {
+                      setStreams((prev) => {
+                        if (prev) {
+                          return [
+                            ...prev,
+                            {
+                              key: res.data.key,
+                              active: false,
+                              name: newStreamName,
+                              is_vod: isVod,
+                              total_views: 0,
+                              live_viewers: 0
+                            },
+                          ]
+                        } else {
+                          return [
+                            {
+                              key: res.data.key,
+                              active: false,
+                              name: newStreamName,
+                              is_vod: isVod,
+                              total_views: 0,
+                              live_viewers: 0
+                            },
+                          ]
+                        }
+                      });
                       setShowAddModal(false);
                       setNewStreamName("");
                       setNewThumbnail(null);
                       setIsVod(false);
                     }
-                  } catch (err) {
-                    console.error(err);
+                  } catch (err: any) {
+                    if (err?.response?.data) {
+                      console.warn(err?.response?.data.error);
+                    }
+                    if (err.response?.status == 401) {
+                      statusAuth.setAuthenticated(false)
+                      navigate("/login")
+                    }
                   }
                 }}
                 className="h-8 px-4 text-sm rounded bg-gradient-to-b from-zinc-100 to-zinc-300 border border-zinc-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] hover:from-zinc-200 hover:to-zinc-400 transition select-none"
@@ -220,9 +268,8 @@ const UserStreams: React.FC = () => {
           {/* Streaming Indicator */}
           <div className="flex items-center mb-4">
             <span
-              className={`w-3 h-3 rounded-full mr-2 ${
-                streaming ? "bg-red-500" : "bg-gray-400"
-              }`}
+              className={`w-3 h-3 rounded-full mr-2 ${streaming ? "bg-red-500" : "bg-gray-400"
+                }`}
             />
             <span className="text-zinc-700 font-medium">
               {streaming ? "Live Streaming" : "Offline"}
@@ -243,19 +290,18 @@ const UserStreams: React.FC = () => {
           </div>
 
           {/* Stream Keys List */}
-          {streams.length > 0 && (
-            <div className="max-h-72 w-min overflow-y-auto border border-zinc-400 pt-3 pr-3 pl-3 pb-1">
+          {streams && streams.length > 0 && (
+            <div className="max-h-72 w-full overflow-y-auto border border-zinc-400 pt-3 pr-3 pl-3 pb-1">
               {streams.map((stream) => (
                 <div className="flex" key={stream.key}>
                   <div className="inline-flex items-center relative mb-2 mr-2">
                     <span
-                      className={`mr-3 w-3 h-3 rounded-full mr-2 ${
-                        stream.active
-                          ? "bg-green-500"
-                          : stream.ended_at
+                      className={`mr-3 w-3 h-3 rounded-full mr-2 ${stream.is_active
+                        ? "bg-green-500"
+                        : stream.ended_at
                           ? "bg-red-400"
                           : "bg-gray-400"
-                      }`}
+                        }`}
                     />
                     <input
                       type="text"
@@ -265,15 +311,14 @@ const UserStreams: React.FC = () => {
                     />
                     <input
                       type="text"
-                      value={`Views: ${stream.views}`}
+                      value={`Views: ${stream.total_views}`}
                       disabled
                       className={`${inputBaseStyle} rounded-l-md w-[125px] mr-2`}
                     />
                     <input
                       type="text"
-                      value={`Live viewers: ${
-                        stream.live_viewers ? stream.live_viewers : 0
-                      }`}
+                      value={`Live viewers: ${stream.live_viewers ? stream.live_viewers : 0
+                        }`}
                       disabled
                       className={`${inputBaseStyle} rounded-l-md w-[125px] mr-2`}
                     />
@@ -297,11 +342,7 @@ const UserStreams: React.FC = () => {
                   <div className="inline-flex items-center relative mb-2">
                     <input
                       type="text"
-                      value={
-                        stream.is_vod
-                          ? "rtmp://localhost/vodlive"
-                          : "rtmp://localhost/live"
-                      }
+                      value="rtmp://localhost/live"
                       disabled
                       className={`${inputBaseStyle} rounded-l-md w-[200px]`}
                     />
@@ -329,7 +370,7 @@ const UserStreams: React.FC = () => {
                   >
                     <AiOutlineClose size={18} />
                   </button>
-                  {stream.active ? (
+                  {stream.is_active ? (
                     <>
                       <button
                         onClick={() => stopStream(stream.key)}

@@ -1,6 +1,18 @@
 import * as React from "react";
 import axios from "axios";
 
+interface GetStreamsResponse {
+  streams: null | {
+    streamer_name: string;
+    key: string;
+    name: string;
+    has_custom_thumbnail: boolean;
+    is_live: boolean;
+    is_vod: boolean;
+    live_viewers: number;
+  }[];
+}
+
 export function useTrendingStreams(intervalMs: number = 45000) {
   const [streams, setStreams] = React.useState<Array<any>>([]);
 
@@ -8,19 +20,31 @@ export function useTrendingStreams(intervalMs: number = 45000) {
     let isMounted = true;
 
     const fetchStreams = async () => {
-      const res = await axios.post<{
-        success: boolean;
-        streams: Array<any>;
-      }>(
-        "http://localhost/api/get_trending_streams.php",
-        {},
-        { withCredentials: true }
-      );
+      try {
+        const res = await axios.post<GetStreamsResponse>(
+          "http://localhost/api/get-streams",
+          {},
+          { withCredentials: true }
+        );
 
-      if (isMounted) {
-        setStreams((prev) => (res.data ? res.data.streams : prev));
+        if (isMounted) {
+          if (res.data) {
+            if (!res.data.streams) {
+              setStreams([]);
+            } else {
+              setStreams(res.data.streams);
+            }
+          }
+        }
+      } catch (err: any) {
+        if (err?.response?.data) {
+          if (isMounted) {
+            setStreams([]);
+            console.warn(err?.response?.data.error);
+          }
+        }
       }
-    };
+    }
 
     // Initial fetch
     fetchStreams();

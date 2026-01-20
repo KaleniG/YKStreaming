@@ -5,13 +5,12 @@ import { Link } from "react-router-dom";
 import DefaultThumbnail from "../assets/default_thumbnail.jpg";
 
 interface Stream {
+  streamer_name: string;
   key: string;
   name: string;
-  uses_thumbnail: boolean;
-  thumbnail_format: string;
+  has_custom_thumbnail: boolean;
   is_live: boolean;
   is_vod: boolean;
-  streamer_name: string;
   live_viewers: number;
 }
 
@@ -25,10 +24,10 @@ const VideoThumbnail: React.FC<VideoThumbnailProps> = ({ stream }) => {
 
   const thumbnailSrc =
     hovered && exists
-      ? `http://localhost/stream_screenshots/${stream.key}.jpg`
-      : stream.uses_thumbnail
-      ? `http://localhost/thumbnails/${stream.key}.${stream.thumbnail_format}`
-      : DefaultThumbnail;
+      ? `http://localhost/thumbnails/live/${stream.key}.jpg`
+      : stream.has_custom_thumbnail
+        ? `http://localhost/thumbnails/custom/${stream.key}.jpg`
+        : DefaultThumbnail;
 
   return (
     <Link
@@ -51,9 +50,8 @@ const VideoThumbnail: React.FC<VideoThumbnailProps> = ({ stream }) => {
           {stream.streamer_name}
         </h3>
         <h4
-          className={`flex items-center text-sm ${
-            stream.is_live ? "visible" : "invisible"
-          }`}
+          className={`flex items-center text-sm ${stream.is_live ? "visible" : "invisible"
+            }`}
         >
           <span className="w-3 h-3 rounded-full mr-2 bg-red-400 inline-block" />
           {`${stream.live_viewers ?? 0} viewers`}

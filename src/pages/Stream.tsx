@@ -15,28 +15,17 @@ const Stream: React.FC = () => {
   }
 
   const sources = React.useMemo(() => {
-    if (isLive && isVOD) {
-      return [
-        {
-          src: `http://localhost/hls/vodlive/${streamKey}.m3u8`,
-          type: "application/x-mpegURL",
-        },
-      ];
-    }
-
     if (isLive) {
       return [
         {
-          src: `http://localhost/hls/live/${streamKey}.m3u8`,
+          src: `http://localhost/streams/${streamKey}.m3u8`,
           type: "application/x-mpegURL",
         },
       ];
-    }
-
-    if (isVOD) {
+    } else if (isVOD) {
       return [
         {
-          src: `http://localhost/recordings/${streamKey}.mp4`,
+          src: `http://localhost/vods/${streamKey}.mp4`,
           type: "video/mp4",
         },
       ];
@@ -50,14 +39,18 @@ const Stream: React.FC = () => {
 
     const registerViewer = async () => {
       try {
-        await axios.post(
-          "http://localhost/api/register_viewer.php",
-          { key: streamKey },
+        const res = await axios.post(
+          `http://localhost/api/stream/view/${streamKey}`,
+          {},
           { withCredentials: true }
         );
-        viewerRegisteredRef.current = true;
-      } catch (err) {
-        console.error(err);
+
+        viewerRegisteredRef.current = (res.status == 200);
+      } catch (err: any) {
+        if (err?.response?.data) {
+          viewerRegisteredRef.current = false;
+          console.warn(err?.response?.data.error);
+        }
       }
     };
 
@@ -65,11 +58,18 @@ const Stream: React.FC = () => {
 
     return () => {
       if (viewerRegisteredRef.current) {
-        void axios.post(
-          "http://localhost/api/unregister_viewer.php",
-          { key: streamKey },
-          { withCredentials: true }
-        );
+        try {
+          void axios.post(
+            `http://localhost/api/stream/unview/${streamKey}`,
+            {},
+            { withCredentials: true }
+          );
+        } catch (err: any) {
+          if (err?.response?.data) {
+            viewerRegisteredRef.current = false;
+            console.warn(err?.response?.data.error);
+          }
+        }
       }
     };
   }, [streamKey]);

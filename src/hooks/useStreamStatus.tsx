@@ -1,6 +1,10 @@
 import * as React from "react";
 import axios from "axios";
 
+interface GetStreamStatusResponse {
+  stream: { is_vod: boolean; is_live: boolean; };
+}
+
 export function useStreamStatus(streamKey: string, intervalMs: number = 5000) {
   const [isLive, setIsLive] = React.useState(false);
   const [isVOD, setIsVOD] = React.useState(false);
@@ -11,24 +15,26 @@ export function useStreamStatus(streamKey: string, intervalMs: number = 5000) {
 
     const fetchStatus = async () => {
       try {
-        const res = await axios.post<{
-          success: boolean;
-          exists: boolean;
-          is_live: boolean;
-          is_vod: boolean;
-        }>(
-          "http://localhost/api/get_stream_status.php",
-          { stream_key: streamKey },
+        const res = await axios.post<GetStreamStatusResponse>(
+          `http://localhost/api/stream/${streamKey}`,
+          {},
           { withCredentials: true }
         );
 
         if (isMounted && res.data) {
-          setExists(res.data.exists); // Always update
-          setIsLive(res.data.exists && res.data.is_live); // Update based on exists & active
-          setIsVOD(res.data.exists && res.data.is_vod); // Update based on exists & active
+          setExists(res.data.stream.is_live || res.data.stream.is_vod);
+          setIsLive(res.data.stream.is_live);
+          setIsVOD(res.data.stream.is_vod);
         }
-      } catch (err) {
-        console.error("Failed to fetch stream status:", err);
+      } catch (err: any) {
+        if (err?.response?.data) {
+          if (isMounted) {
+            setExists(false);
+            setIsLive(false);
+            setIsVOD(false);
+            console.warn(err?.response?.data.error);
+          }
+        }
       }
     };
 

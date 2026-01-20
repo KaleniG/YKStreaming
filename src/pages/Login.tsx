@@ -49,23 +49,27 @@ const Login: React.FC = () => {
     setLoading(true);
 
     try {
-      const res = await axios.post<{ success: boolean; message: string }>(
-        "http://localhost/api/login.php",
+      const res = await axios.post(
+        "http://localhost/api/auth/login",
         { email, password, remember_me: rememberMe },
         { withCredentials: true }
       );
 
-      if (res.data.success) {
+      if (res.status == 200) {
         statusAuth.setAuthenticated(true);
         navigate("/");
-      } else {
-        setInvalidField("email");
-        emailRef.current?.focus();
       }
-    } catch (err) {
-      console.error(err);
-      setInvalidField("email");
-      emailRef.current?.focus();
+    } catch (err: any) {
+      if (err?.response?.data) {
+        console.warn(err.response.data.error);
+        statusAuth.setAuthenticated(false);
+        setInvalidField(err.response.data.param);
+        if (err.response.data.param == "email") {
+          emailRef.current?.focus();
+        } else if (err.response.data.param == "password") {
+          passwordRef.current?.focus();
+        }
+      }
     } finally {
       setLoading(false);
     }
@@ -96,11 +100,10 @@ const Login: React.FC = () => {
           type="email"
           ref={emailRef}
           placeholder="Enter your email"
-          className={`${inputFieldBaseStyle} ${
-            invalidField === "email"
-              ? "border-red-600 focus:ring-red-500"
-              : "border-zinc-400 focus:ring-zinc-500"
-          }`}
+          className={`${inputFieldBaseStyle} ${invalidField === "email"
+            ? "border-red-600 focus:ring-red-500"
+            : "border-zinc-400 focus:ring-zinc-500"
+            }`}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           autoCorrect="off"
@@ -121,11 +124,10 @@ const Login: React.FC = () => {
             type={showPassword ? "text" : "password"}
             ref={passwordRef}
             placeholder="Enter your password"
-            className={`${inputFieldBaseStyle} ${
-              invalidField === "password"
-                ? "border-red-600 focus:ring-red-500"
-                : "border-zinc-400 focus:ring-zinc-500"
-            } pr-10`} // extra padding for the icon
+            className={`${inputFieldBaseStyle} ${invalidField === "password"
+              ? "border-red-600 focus:ring-red-500"
+              : "border-zinc-400 focus:ring-zinc-500"
+              } pr-10`} // extra padding for the icon
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />

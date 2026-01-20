@@ -16,10 +16,9 @@ const Signup: React.FC = () => {
   const [repeatPassword, setRepeatPassword] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [invalidField, setInvalidField] = React.useState<
-    "username" | "email" | "password" | "repeatPassword" | null
+    "email" | "password" | "repeatPassword" | null
   >(null);
 
-  const usernameRef = React.useRef<HTMLInputElement>(null);
   const emailRef = React.useRef<HTMLInputElement>(null);
   const passwordRef = React.useRef<HTMLInputElement>(null);
   const repeatPasswordRef = React.useRef<HTMLInputElement>(null);
@@ -31,11 +30,6 @@ const Signup: React.FC = () => {
   }, [auth, navigate]);
 
   const validate = (): boolean => {
-    if (!username) {
-      setInvalidField("username");
-      usernameRef.current?.focus();
-      return false;
-    }
     if (!email) {
       setInvalidField("email");
       emailRef.current?.focus();
@@ -68,30 +62,25 @@ const Signup: React.FC = () => {
     setLoading(true);
 
     try {
-      const res = await axios.post<{
-        success: boolean;
-        message: string;
-        existing: boolean;
-      }>(
-        "http://localhost/api/signup.php",
+      const res = await axios.post(
+        "http://localhost/api/auth/signup",
         { name: username, email, password },
         { withCredentials: true }
       );
 
-      if (res.data.success) {
+      if (res.status == 200) {
         auth.setAuthenticated(true);
         navigate("/");
-      } else if (res.data.existing) {
-        setInvalidField("email");
-        emailRef.current?.focus();
-      } else {
-        setInvalidField("username");
-        usernameRef.current?.focus();
       }
-    } catch (err) {
-      console.error(err);
-      setInvalidField("username");
-      usernameRef.current?.focus();
+    } catch (err: any) {
+      if (err?.response?.data) {
+        console.warn(err.response.data.error);
+        auth.setAuthenticated(false);
+        setInvalidField(err.response.data.param);
+        if (err.response.data.param == "email") {
+          emailRef.current?.focus();
+        }
+      }
     } finally {
       setLoading(false);
     }
@@ -120,13 +109,8 @@ const Signup: React.FC = () => {
         <input
           id="username"
           type="text"
-          ref={usernameRef}
           placeholder="Enter your username"
-          className={`${inputFieldBaseStyle} ${
-            invalidField === "username"
-              ? "border-red-600 focus:ring-red-500"
-              : "border-zinc-400 focus:ring-zinc-500"
-          }`}
+          className={`${inputFieldBaseStyle} border-zinc-400 focus:ring-zinc-500`}
           value={username}
           onChange={(e) => setUsername(e.target.value)}
         />
@@ -143,11 +127,10 @@ const Signup: React.FC = () => {
           type="email"
           ref={emailRef}
           placeholder="Enter your email"
-          className={`${inputFieldBaseStyle} ${
-            invalidField === "email"
-              ? "border-red-600 focus:ring-red-500"
-              : "border-zinc-400 focus:ring-zinc-500"
-          }`}
+          className={`${inputFieldBaseStyle} ${invalidField === "email"
+            ? "border-red-600 focus:ring-red-500"
+            : "border-zinc-400 focus:ring-zinc-500"
+            }`}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           autoCorrect="off"
@@ -168,11 +151,10 @@ const Signup: React.FC = () => {
             type={showPassword ? "text" : "password"}
             ref={passwordRef}
             placeholder="Enter your password"
-            className={`${inputFieldBaseStyle} ${
-              invalidField === "password"
-                ? "border-red-600 focus:ring-red-500"
-                : "border-zinc-400 focus:ring-zinc-500"
-            }`}
+            className={`${inputFieldBaseStyle} ${invalidField === "password"
+              ? "border-red-600 focus:ring-red-500"
+              : "border-zinc-400 focus:ring-zinc-500"
+              }`}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
@@ -202,11 +184,10 @@ const Signup: React.FC = () => {
             type={showPassword ? "text" : "password"}
             ref={repeatPasswordRef}
             placeholder="Repeat your password"
-            className={`${inputFieldBaseStyle} ${
-              invalidField === "repeatPassword"
-                ? "border-red-600 focus:ring-red-500"
-                : "border-zinc-400 focus:ring-zinc-500"
-            } mb-4`}
+            className={`${inputFieldBaseStyle} ${invalidField === "repeatPassword"
+              ? "border-red-600 focus:ring-red-500"
+              : "border-zinc-400 focus:ring-zinc-500"
+              } mb-4`}
             value={repeatPassword}
             onChange={(e) => setRepeatPassword(e.target.value)}
           />

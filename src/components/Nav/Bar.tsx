@@ -16,18 +16,24 @@ const Bar: React.FC = () => {
   const handleLogout = async () => {
     page.setLoading(true);
     try {
-      const res = await axios.post<{ success: boolean }>(
-        "http://localhost/api/logout.php",
+      const res = await axios.post(
+        "http://localhost/api/user/logout",
         {},
         { withCredentials: true }
       );
 
-      if (res.data?.success) {
+      if (res.status == 200) {
         auth.setAuthenticated(false);
         navigate("/");
       }
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      if (err?.response?.data) {
+        console.warn(err?.response?.data.error)
+      }
+      if (err.response?.status == 401) {
+        auth.setAuthenticated(false)
+        navigate("/")
+      }
     } finally {
       page.setLoading(false);
     }

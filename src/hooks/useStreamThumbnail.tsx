@@ -15,7 +15,7 @@ export function useStreamThumbnail(
         img.onload = () => resolve(true);
         img.onerror = () => resolve(false);
 
-        img.src = `http://localhost/stream_screenshots/${thumbnailUrl}.jpg`;
+        img.src = `http://localhost/thumbnails/custom/${thumbnailUrl}.jpg`;
       });
 
       if (isMounted) {

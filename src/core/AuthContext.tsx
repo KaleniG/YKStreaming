@@ -9,6 +9,10 @@ interface AuthContext {
 
 const authContext = React.createContext<AuthContext | null>(null);
 
+interface AuthCheckResponse {
+  user: boolean | { name: string; email: string; };
+}
+
 export const AuthProvider: React.FC<React.PropsWithChildren> = ({
   children,
 }) => {
@@ -18,22 +22,27 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({
   React.useEffect(() => {
     const checkAuth = async () => {
       try {
-        page.setLoading(true);
-        const res = await axios.post<{
-          success: boolean;
-          logged_in: boolean;
-        }>(
-          "http://localhost/api/auth_check.php",
+        const res = await axios.post<AuthCheckResponse>(
+          "http://localhost/api/auth/check",
           {},
           { withCredentials: true }
         );
 
-        setIsAuthenticated(!!res.data?.logged_in);
-      } catch {
-        setIsAuthenticated(false);
+        if (res.data?.user) {
+          setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
+        }
+
+      } catch (err: any) {
+        if (err?.response?.data) {
+          setIsAuthenticated(false);
+          console.warn(err?.response?.data.error)
+        }
       } finally {
         page.setLoading(false);
       }
+
     };
 
     checkAuth();

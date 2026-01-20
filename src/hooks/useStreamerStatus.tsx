@@ -1,7 +1,24 @@
 import * as React from "react";
 import axios from "axios";
+import useAuth from "@/core/AuthContext";
+import { useNavigate } from "react-router-dom";
+
+interface GetUserStreamsResponse {
+  streams: null | {
+    name: string;
+    key: string;
+    is_active: boolean;
+    ended_at: Date;
+    total_views: number;
+    is_vod: boolean;
+    live_viewers: number;
+  }[];
+}
 
 export function useStreamerStatus(intervalMs: number = 5000) {
+  const statusAuth = useAuth();
+  const navigate = useNavigate();
+
   const streamsState = React.useState<Array<any>>([]);
   const [streams, setStreams] = streamsState;
   const [streaming, setStreaming] = React.useState<boolean>(false);
@@ -10,20 +27,32 @@ export function useStreamerStatus(intervalMs: number = 5000) {
     let isMounted = true;
 
     const fetchStatus = async () => {
-      const res = await axios.post<{
-        success: boolean;
-        streams: Array<any>;
-      }>(
-        "http://localhost/api/get_streamer_status.php",
-        {},
-        { withCredentials: true }
-      );
+      try {
+        const res = await axios.post<GetUserStreamsResponse>(
+          "http://localhost/api/user/streams/",
+          {},
+          { withCredentials: true }
+        );
 
-      if (isMounted) {
-        setStreams((prev) => (res.data ? res.data.streams : prev));
-        const streaming = res.data.streams.some((stream) => stream.active);
-        setStreaming((prev) => (res.data ? streaming : prev));
+        if (isMounted) {
+          setStreams((prev) => (res.data ? res.data.streams : prev));
+          const streaming = streams ? streams.some((stream) => stream.is_active) : false;
+          setStreaming((prev) => (res.data ? streaming : prev));
+        }
+      } catch (err: any) {
+        if (isMounted) {
+          if (err?.response?.data) {
+            setStreams([]);
+            setStreaming(false);
+            console.warn(err?.response?.data.error);
+          }
+        }
+        if (err.response?.status == 401) {
+          statusAuth.setAuthenticated(false)
+          navigate("/login")
+        }
       }
+
     };
 
     // Initial fetch
@@ -40,7 +69,7 @@ export function useStreamerStatus(intervalMs: number = 5000) {
   }, [intervalMs]);
 
   React.useEffect(() => {
-    const streaming = streams.some((stream) => stream.active);
+    const streaming = streams ? streams.some((stream) => stream.is_active) : false;
     setStreaming(streaming);
   }, [streams]);
 
