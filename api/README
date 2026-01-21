@@ -1,0 +1,4 @@
+# RUN THESE TO GENERATE THE MODELS IN THIS PATH
+
+export PATH="$PATH:$(go env GOPATH)/bin"
+sqlc generate

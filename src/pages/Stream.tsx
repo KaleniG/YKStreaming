@@ -35,7 +35,7 @@ const Stream: React.FC = () => {
   }, [streamKey, isLive, isVOD]);
 
   React.useEffect(() => {
-    if (!streamKey) return;
+    if (!streamKey || !isLive) return;
 
     const registerViewer = async () => {
       try {
@@ -72,7 +72,7 @@ const Stream: React.FC = () => {
         }
       }
     };
-  }, [streamKey]);
+  }, [streamKey, isLive]);
 
   const videoJsOptions = React.useMemo(
     () => ({

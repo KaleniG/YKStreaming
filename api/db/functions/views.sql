@@ -60,7 +60,7 @@ BEGIN
     LIMIT 1;
 
     IF v_stream_id IS NULL THEN
-        RETURN FALSE;
+      RETURN FALSE;
     END IF;
 
     -- 2. Insert or update the view

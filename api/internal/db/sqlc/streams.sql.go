@@ -259,6 +259,7 @@ SELECT
   s.key,
   s.is_active,
   s.ended_at,
+  s.started_at,
   s.total_views,
   s.is_vod,
   COUNT(v.id) FILTER (WHERE v.is_watching = TRUE) AS live_viewers
@@ -274,6 +275,7 @@ type GetUserStreamsRow struct {
 	Key         string             `db:"key" json:"key"`
 	IsActive    pgtype.Bool        `db:"is_active" json:"is_active"`
 	EndedAt     pgtype.Timestamptz `db:"ended_at" json:"ended_at"`
+	StartedAt   pgtype.Timestamptz `db:"started_at" json:"started_at"`
 	TotalViews  pgtype.Int4        `db:"total_views" json:"total_views"`
 	IsVod       pgtype.Bool        `db:"is_vod" json:"is_vod"`
 	LiveViewers int64              `db:"live_viewers" json:"live_viewers"`
@@ -286,6 +288,7 @@ type GetUserStreamsRow struct {
 //	  s.key,
 //	  s.is_active,
 //	  s.ended_at,
+//	  s.started_at,
 //	  s.total_views,
 //	  s.is_vod,
 //	  COUNT(v.id) FILTER (WHERE v.is_watching = TRUE) AS live_viewers
@@ -308,6 +311,7 @@ func (q *Queries) GetUserStreams(ctx context.Context, userID int32) ([]GetUserSt
 			&i.Key,
 			&i.IsActive,
 			&i.EndedAt,
+			&i.StartedAt,
 			&i.TotalViews,
 			&i.IsVod,
 			&i.LiveViewers,

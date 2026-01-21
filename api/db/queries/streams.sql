@@ -4,6 +4,7 @@ SELECT
   s.key,
   s.is_active,
   s.ended_at,
+  s.started_at,
   s.total_views,
   s.is_vod,
   COUNT(v.id) FILTER (WHERE v.is_watching = TRUE) AS live_viewers

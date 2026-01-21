@@ -1,10 +1,8 @@
 package handlers
 
 import (
-	"io"
 	"log"
 	"net/http"
-	"strings"
 
 	"ykstreaming_api/internal/helpers"
 )
@@ -33,14 +31,6 @@ func requestStreamRecordingAction(key string, action recordingAction) error {
 		return err
 	}
 	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
-	msg := strings.TrimSpace(string(body))
-	log.Print(msg) //////////// TEMP JUST TO SEE WHAT IT OUTPUTS
 	return nil
 }
 
@@ -51,14 +41,5 @@ func requestStreamStop(key string) error {
 		return err
 	}
 	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
-	msg := strings.TrimSpace(string(body))
-	log.Print(msg) //////////// TEMP JUST TO SEE WHAT IT OUTPUTS
-
 	return nil
 }

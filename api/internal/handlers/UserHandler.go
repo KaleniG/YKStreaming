@@ -118,7 +118,7 @@ func AddStream(dbStore *db.Store) gin.HandlerFunc {
 		}
 
 		for {
-			newKey, err = helpers.GenerateRandomToken(64)
+			newKey, err = helpers.GenerateRandomToken(24)
 			if err != nil {
 				log.Panic(err)
 			}

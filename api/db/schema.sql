@@ -98,7 +98,7 @@ BEGIN
     LIMIT 1;
 
     IF v_stream_id IS NULL THEN
-        RETURN FALSE;
+      RETURN FALSE;
     END IF;
 
     -- 2. Insert or update the view
@@ -200,7 +200,7 @@ DECLARE
     rows_changed INT;
 BEGIN
   UPDATE streams
-  SET is_active = TRUE
+  SET is_active = TRUE, started_at = NOW()
   WHERE key = p_stream_key
     AND ended_at IS NULL
     AND is_active IS DISTINCT FROM TRUE;

@@ -182,8 +182,8 @@ func OnStreamRecordDone(dbStore *db.Store) gin.HandlerFunc {
 				"-c", "copy",
 				mp4Filepath,
 			)
-			cmd.Stderr = os.Stderr
-			cmd.Stdout = os.Stdout
+			//cmd.Stderr = os.Stderr
+			//cmd.Stdout = os.Stdout
 
 			err := cmd.Run()
 			if err != nil {
@@ -194,16 +194,14 @@ func OnStreamRecordDone(dbStore *db.Store) gin.HandlerFunc {
 					"-c:a", "aac",
 					mp4Filepath,
 				)
-				cmd.Stderr = os.Stderr
-				cmd.Stdout = os.Stdout
+				//cmd.Stderr = os.Stderr
+				//cmd.Stdout = os.Stdout
 
 				err := cmd.Run()
 				if err != nil {
 					log.Panic(err)
 				}
 			}
-		} else {
-			log.Panic(flvFilepath + "file is missing on stream record done nginx rtmp module request")
 		}
 
 		c.Status(http.StatusOK)

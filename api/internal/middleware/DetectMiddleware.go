@@ -15,7 +15,7 @@ import (
 
 func guestFallback(session sessions.Session) error {
 	token := session.Get("guest_token")
-	if token == nil {
+	if token != nil {
 		return nil
 	}
 
@@ -32,10 +32,18 @@ func Detect(dbStore *db.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		session := sessions.Default(c)
 		userID := session.Get("user_id")
+
 		if userID == nil {
+			// Try remember token
 			rememberToken, err := c.Cookie("remember_token")
-			if err != nil {
-				log.Print(err)
+			if err != nil && err != http.ErrNoCookie {
+				log.Print("Cookie read error:", err)
+				c.AbortWithStatus(http.StatusInternalServerError)
+				return
+			}
+
+			if err == http.ErrNoCookie {
+				// No cookie, fallback to guest
 				if err := guestFallback(session); err != nil {
 					log.Print(err)
 					c.AbortWithStatus(http.StatusInternalServerError)
@@ -45,21 +53,27 @@ func Detect(dbStore *db.Store) gin.HandlerFunc {
 				return
 			}
 
-			ctx := c.Request.Context()
-			var rememberTokenText pgtype.Text
-			if err := rememberTokenText.Scan(rememberToken); err != nil {
-				log.Panic(err)
+			// Validate remember token
+			var tokenText pgtype.Text
+			if err := tokenText.Scan(rememberToken); err != nil {
+				log.Print("Failed to scan remember token:", err)
+				if err := guestFallback(session); err != nil {
+					c.AbortWithStatus(http.StatusInternalServerError)
+					return
+				}
+				c.Next()
+				return
 			}
-			userID, err = dbStore.Queries.GetUserIdByRememberToken(ctx, rememberTokenText)
+
+			userID, err = dbStore.Queries.GetUserIdByRememberToken(c.Request.Context(), tokenText)
 			if err != nil {
 				if err == pgx.ErrNoRows {
 					c.SetCookie("remember_token", "", -1, "/", "localhost", false, true)
-					log.Print("invalid remember me token, the token will be eliminated")
+					log.Print("Invalid remember token cleared")
 				} else {
 					log.Print(err)
 				}
 				if err := guestFallback(session); err != nil {
-					log.Print(err)
 					c.AbortWithStatus(http.StatusInternalServerError)
 					return
 				}
@@ -69,9 +83,8 @@ func Detect(dbStore *db.Store) gin.HandlerFunc {
 
 			session.Set("user_id", userID)
 			if err := session.Save(); err != nil {
-				log.Print(err)
+				log.Print("Failed to save session:", err)
 				if err := guestFallback(session); err != nil {
-					log.Print(err)
 					c.AbortWithStatus(http.StatusInternalServerError)
 					return
 				}
@@ -83,26 +96,22 @@ func Detect(dbStore *db.Store) gin.HandlerFunc {
 			return
 		}
 
-		ctx := c.Request.Context()
-		_, err := dbStore.Queries.CheckUserById(ctx, userID.(int32))
+		// Validate session user_id
+		_, err := dbStore.Queries.CheckUserById(c.Request.Context(), userID.(int32))
 		if err != nil {
 			if err == pgx.ErrNoRows {
-				log.Print("invalid session user_id, the user_id will be eliminated")
+				log.Print("Invalid session user_id cleared")
 				session.Delete("user_id")
-				if err := session.Save(); err != nil {
-					log.Print(err)
-				}
+				_ = session.Save()
 			} else {
 				log.Print(err)
 			}
 			if err := guestFallback(session); err != nil {
-				log.Print(err)
 				c.AbortWithStatus(http.StatusInternalServerError)
 				return
 			}
-			c.Next()
-			return
 		}
+
 		c.Next()
 	}
 }

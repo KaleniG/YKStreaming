@@ -348,24 +348,30 @@ const UserStreams: React.FC = () => {
                       disabled
                       className={`${inputBaseStyle} rounded-l-md w-[200px] mr-2`}
                     />
-                    <input
-                      type="text"
-                      value={`Views: ${stream.total_views}`}
-                      disabled
-                      className={`${inputBaseStyle} rounded-l-md w-[150px] mr-2`}
-                    />
-                    <input
-                      type="text"
-                      value={`Live viewers: ${stream.live_viewers ? stream.live_viewers : 0
-                        }`}
-                      disabled
-                      className={`${inputBaseStyle} rounded-l-md w-[150px] mr-2`}
-                    />
+                    {stream.started_at ?
+                      <>
+                        <input
+                          type="text"
+                          value={`Views: ${stream.total_views}`}
+                          disabled
+                          className={`${inputBaseStyle} rounded-l-md w-[150px] mr-2`}
+                        />
+                        {!stream.ended_at ?
+                          <input
+                            type="text"
+                            value={`Live viewers: ${stream.live_viewers ? stream.live_viewers : 0
+                              }`}
+                            disabled
+                            className={`${inputBaseStyle} rounded-l-md w-[150px] mr-2`} />
+                          : null
+                        }
+                      </> : null
+                    }
                     <input
                       type="text"
                       value={stream.key}
                       disabled
-                      className={`${inputBaseStyle} rounded-l-md w-[450px]`}
+                      className={`${inputBaseStyle} rounded-l-md w-[475px]`}
                     />
                     <button
                       onClick={() => copyToClipboard(stream.key, stream.key)}

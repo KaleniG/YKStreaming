@@ -9,6 +9,7 @@ interface GetUserStreamsResponse {
     key: string;
     is_active: boolean;
     ended_at: Date;
+    started_at: Date;
     total_views: number;
     is_vod: boolean;
     live_viewers: number;
