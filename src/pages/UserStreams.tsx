@@ -61,6 +61,19 @@ const UserStreams: React.FC = () => {
           console.warn(err?.response?.data.error);
         }
         if (err.response?.status == 401) {
+          try {
+            const res = await axios.post(
+              "http://localhost/api/user/logout",
+              {},
+              { withCredentials: true }
+            );
+          } catch (err: any) {
+            if (err?.response?.data) {
+              console.warn(err?.response?.data.error)
+            }
+          }
+          statusAuth.setAuthenticated(false);
+          navigate("/login")
           statusAuth.setAuthenticated(false)
           navigate("/login")
         }
@@ -97,6 +110,19 @@ const UserStreams: React.FC = () => {
           console.warn(err?.response?.data.error);
         }
         if (err.response?.status == 401) {
+          try {
+            const res = await axios.post(
+              "http://localhost/api/user/logout",
+              {},
+              { withCredentials: true }
+            );
+          } catch (err: any) {
+            if (err?.response?.data) {
+              console.warn(err?.response?.data.error)
+            }
+          }
+          statusAuth.setAuthenticated(false);
+          navigate("/login")
           statusAuth.setAuthenticated(false)
           navigate("/login")
         }
@@ -106,7 +132,7 @@ const UserStreams: React.FC = () => {
   };
 
   const inputBaseStyle =
-    "w-[550px] caret-zinc-500 selection:bg-zinc-300 selection:text-black h-9 rounded-md bg-gradient-to-b from-white to-zinc-200 border px-3 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.2)] focus:outline-none focus:ring-1 border-zinc-400";
+    "caret-zinc-500 selection:bg-zinc-300 selection:text-black h-9 rounded-md bg-gradient-to-b from-white to-zinc-200 border px-3 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.2)] focus:outline-none focus:ring-1 border-zinc-400";
 
   const buttonBaseStyle =
     "mb-2 full-h px-4 text-sm bg-gradient-to-b from-zinc-100 to-zinc-300 border border-zinc-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] hover:from-zinc-200 hover:to-zinc-400 transition select-none";
@@ -245,6 +271,19 @@ const UserStreams: React.FC = () => {
                       console.warn(err?.response?.data.error);
                     }
                     if (err.response?.status == 401) {
+                      try {
+                        const res = await axios.post(
+                          "http://localhost/api/user/logout",
+                          {},
+                          { withCredentials: true }
+                        );
+                      } catch (err: any) {
+                        if (err?.response?.data) {
+                          console.warn(err?.response?.data.error)
+                        }
+                      }
+                      statusAuth.setAuthenticated(false);
+                      navigate("/login")
                       statusAuth.setAuthenticated(false)
                       navigate("/login")
                     }
@@ -307,26 +346,26 @@ const UserStreams: React.FC = () => {
                       type="text"
                       value={stream.name}
                       disabled
-                      className={`${inputBaseStyle} rounded-l-md w-[125px] mr-2`}
+                      className={`${inputBaseStyle} rounded-l-md w-[200px] mr-2`}
                     />
                     <input
                       type="text"
                       value={`Views: ${stream.total_views}`}
                       disabled
-                      className={`${inputBaseStyle} rounded-l-md w-[125px] mr-2`}
+                      className={`${inputBaseStyle} rounded-l-md w-[150px] mr-2`}
                     />
                     <input
                       type="text"
                       value={`Live viewers: ${stream.live_viewers ? stream.live_viewers : 0
                         }`}
                       disabled
-                      className={`${inputBaseStyle} rounded-l-md w-[125px] mr-2`}
+                      className={`${inputBaseStyle} rounded-l-md w-[150px] mr-2`}
                     />
                     <input
                       type="text"
                       value={stream.key}
                       disabled
-                      className={`${inputBaseStyle} rounded-l-md`}
+                      className={`${inputBaseStyle} rounded-l-md w-[450px]`}
                     />
                     <button
                       onClick={() => copyToClipboard(stream.key, stream.key)}

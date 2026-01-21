@@ -26,8 +26,13 @@ func Auth(dbStore *db.Store) gin.HandlerFunc {
 				log.Panic(err)
 			}
 
+			var rememberTokenText pgtype.Text
+			if err := rememberTokenText.Scan(rememberToken); err != nil {
+				log.Panic(err)
+			}
+
 			ctx := c.Request.Context()
-			userID, err = dbStore.Queries.GetUserIdByRememberToken(ctx, pgtype.Text{String: rememberToken})
+			userID, err = dbStore.Queries.GetUserIdByRememberToken(ctx, rememberTokenText)
 			if err != nil {
 				if err == pgx.ErrNoRows {
 					c.SetCookie("remember_token", "", -1, "/", "localhost", false, true)

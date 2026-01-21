@@ -48,7 +48,18 @@ export function useStreamerStatus(intervalMs: number = 5000) {
           }
         }
         if (err.response?.status == 401) {
-          statusAuth.setAuthenticated(false)
+          try {
+            const res = await axios.post(
+              "http://localhost/api/user/logout",
+              {},
+              { withCredentials: true }
+            );
+          } catch (err: any) {
+            if (err?.response?.data) {
+              console.warn(err?.response?.data.error)
+            }
+          }
+          statusAuth.setAuthenticated(false);
           navigate("/login")
         }
       }
