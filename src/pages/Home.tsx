@@ -1,9 +1,9 @@
 import * as React from "react";
-import { useTrendingStreams } from "../hooks/useTrendingStreams";
+import { usePublicStreams } from "../hooks/usePublicStreams";
 import VideoThumbnail from "@/components/VideoThumbnail";
 
 const Home: React.FC = () => {
-  const { streams } = useTrendingStreams();
+  const { streams } = usePublicStreams();
 
   return (
     <div className="flex flex-col h-full pt-6">

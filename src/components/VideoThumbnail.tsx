@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useStreamThumbnail } from "@/hooks/useStreamThumbnail";
+import { useThumbnail as useThumbnail } from "@/hooks/useThumbnail";
 import { Link } from "react-router-dom";
 
 import DefaultThumbnail from "../assets/default_thumbnail.jpg";
@@ -19,11 +19,11 @@ interface VideoThumbnailProps {
 }
 
 const VideoThumbnail: React.FC<VideoThumbnailProps> = ({ stream }) => {
-  const { exists } = useStreamThumbnail(stream.key);
+  const liveThumbnail = useThumbnail(`http://localhost/thumbnails/live/${stream.key}.jpg`);
   const [hovered, setHovered] = React.useState(false);
 
   const thumbnailSrc =
-    hovered && exists
+    hovered && liveThumbnail.exists
       ? `http://localhost/thumbnails/live/${stream.key}.jpg`
       : stream.has_custom_thumbnail
         ? `http://localhost/thumbnails/custom/${stream.key}.jpg`
