@@ -22,8 +22,8 @@ func Check(dbStore *db.Store) gin.HandlerFunc {
 		userID := session.Get("user_id")
 		if userID == nil {
 			rememberToken, err := c.Cookie("remember_token")
-			if err != nil {
-				if err == http.ErrNoCookie {
+			if err != nil || rememberToken == "" {
+				if err == http.ErrNoCookie || rememberToken == "" {
 					guestToken := session.Get("guest_token")
 					if guestToken == nil {
 						newGuestToken, err := helpers.GenerateRandomToken(32)

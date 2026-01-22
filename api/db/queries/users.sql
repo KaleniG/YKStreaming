@@ -53,3 +53,7 @@ WHERE remember_token = sqlc.arg(remember_token);
 UPDATE users 
 SET remember_token = NULL 
 WHERE id = sqlc.arg(user_id);
+
+-- name: RemoveUserByEmail :exec
+DELETE FROM users
+WHERE email = sqlc.arg(email);

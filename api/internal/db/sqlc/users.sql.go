@@ -163,6 +163,20 @@ func (q *Queries) GetUserIdByRememberToken(ctx context.Context, rememberToken pg
 	return column_1, err
 }
 
+const removeUserByEmail = `-- name: RemoveUserByEmail :exec
+DELETE FROM users
+WHERE email = $1
+`
+
+// RemoveUserByEmail
+//
+//	DELETE FROM users
+//	WHERE email = $1
+func (q *Queries) RemoveUserByEmail(ctx context.Context, email string) error {
+	_, err := q.db.Exec(ctx, removeUserByEmail, email)
+	return err
+}
+
 const resetRememberToken = `-- name: ResetRememberToken :exec
 UPDATE users 
 SET remember_token = NULL 

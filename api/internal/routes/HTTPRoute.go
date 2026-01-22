@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"ykstreaming_api/internal/db"
+	"ykstreaming_api/internal/handlers"
 	"ykstreaming_api/internal/helpers"
 	"ykstreaming_api/internal/middleware"
 
@@ -24,8 +25,8 @@ func HTTPRoute(router *gin.Engine, dbStore *db.Store) {
 		}))
 	*/
 
-	cookieStore := cookie.NewStore([]byte(sessionAuthKey))
-	cookieStore.Options(sessions.Options{
+	sessionStore := cookie.NewStore([]byte(sessionAuthKey))
+	sessionStore.Options(sessions.Options{
 		Path:     "/",
 		MaxAge:   3600,
 		HttpOnly: true,
@@ -35,13 +36,11 @@ func HTTPRoute(router *gin.Engine, dbStore *db.Store) {
 
 	httpRoute := router.Group("/http")
 
-	httpRoute.Use(sessions.Sessions("yksession", cookieStore))
+	httpRoute.Use(sessions.Sessions("yksession", sessionStore))
 	httpRoute.Use(middleware.CORS())
 
 	{
-		httpRoute.OPTIONS("/*path", func(c *gin.Context) {
-			c.Status(204)
-		})
+		httpRoute.OPTIONS("/*path", handlers.OptionsCORSHandler())
 		DefaultRoute(httpRoute, dbStore)
 		AuthRoute(httpRoute, dbStore)
 		UserRoute(httpRoute, dbStore)
