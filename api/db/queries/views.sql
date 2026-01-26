@@ -17,3 +17,6 @@ AS stream_found;
 -- name: RemoveStreamViewers :exec
 DELETE FROM views
 WHERE stream_id = sqlc.arg(stream_id);
+
+-- name: RemoveAllViews :exec
+TRUNCATE views CASCADE;

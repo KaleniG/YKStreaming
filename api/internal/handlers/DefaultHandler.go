@@ -21,7 +21,11 @@ func GetStreams(dbStore *db.Store) gin.HandlerFunc {
 			log.Panic(err)
 		}
 
-		c.JSON(http.StatusOK, gin.H{"streams": streams})
+		if len(streams) == 0 {
+			c.JSON(http.StatusOK, gin.H{"streams": false})
+		} else {
+			c.JSON(http.StatusOK, gin.H{"streams": streams})
+		}
 	}
 }
 

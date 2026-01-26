@@ -73,12 +73,30 @@ func (q *Queries) AddStream(ctx context.Context, arg AddStreamParams) (int32, er
 	return column_1, err
 }
 
+const checkStreamExistsByKey = `-- name: CheckStreamExistsByKey :one
+SELECT 1 FROM streams 
+WHERE key = $1
+`
+
+// CheckStreamExistsByKey
+//
+//	SELECT 1 FROM streams
+//	WHERE key = $1
+func (q *Queries) CheckStreamExistsByKey(ctx context.Context, key string) (int32, error) {
+	row := q.db.QueryRow(ctx, checkStreamExistsByKey, key)
+	var column_1 int32
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const endStream = `-- name: EndStream :one
 UPDATE streams 
 SET 
   ended_at = NOW(), 
   is_active = FALSE 
 WHERE key = $1
+  AND is_active IS DISTINCT FROM FALSE
+  AND ended_at IS NULL
 RETURNING is_vod
 `
 
@@ -89,6 +107,8 @@ RETURNING is_vod
 //	  ended_at = NOW(),
 //	  is_active = FALSE
 //	WHERE key = $1
+//	  AND is_active IS DISTINCT FROM FALSE
+//	  AND ended_at IS NULL
 //	RETURNING is_vod
 func (q *Queries) EndStream(ctx context.Context, key string) (pgtype.Bool, error) {
 	row := q.db.QueryRow(ctx, endStream, key)
@@ -326,6 +346,18 @@ func (q *Queries) GetUserStreams(ctx context.Context, userID int32) ([]GetUserSt
 	return items, nil
 }
 
+const removeAllStreams = `-- name: RemoveAllStreams :exec
+TRUNCATE streams CASCADE
+`
+
+// RemoveAllStreams
+//
+//	TRUNCATE streams CASCADE
+func (q *Queries) RemoveAllStreams(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, removeAllStreams)
+	return err
+}
+
 const removeStream = `-- name: RemoveStream :exec
 DELETE FROM streams 
 WHERE id = $1
@@ -358,14 +390,18 @@ func (q *Queries) StartStream(ctx context.Context, streamKey string) (bool, erro
 
 const stopStream = `-- name: StopStream :exec
 UPDATE streams 
-SET is_active = FALSE 
+SET 
+  is_active = FALSE, 
+  ended_at = NOW() 
 WHERE id = $1
 `
 
 // StopStream
 //
 //	UPDATE streams
-//	SET is_active = FALSE
+//	SET
+//	  is_active = FALSE,
+//	  ended_at = NOW()
 //	WHERE id = $1
 func (q *Queries) StopStream(ctx context.Context, streamID int32) error {
 	_, err := q.db.Exec(ctx, stopStream, streamID)

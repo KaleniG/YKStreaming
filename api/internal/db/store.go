@@ -15,10 +15,27 @@ type Store struct {
 	Queries *sqlc.Queries
 }
 
-func Open() *Store {
+func OpenDefault() *Store {
 	postgresAuth := os.Getenv("POSTGRES_AUTH")
 	if postgresAuth == "" {
 		log.Fatal("POSTGRES_AUTH is missing")
+	}
+
+	dbConn, err := pgxpool.New(context.Background(), postgresAuth)
+	if err != nil {
+		log.Fatal("failed to connect to DB:", err)
+	}
+
+	return &Store{
+		db:      dbConn,
+		Queries: sqlc.New(dbConn),
+	}
+}
+
+func OpenTest() *Store {
+	postgresAuth := os.Getenv("POSTGRES_TEST_AUTH")
+	if postgresAuth == "" {
+		log.Fatal("POSTGRES_TEST_AUTH is missing")
 	}
 
 	dbConn, err := pgxpool.New(context.Background(), postgresAuth)

@@ -52,7 +52,9 @@ LIMIT 1;
 
 -- name: StopStream :exec
 UPDATE streams 
-SET is_active = FALSE 
+SET 
+  is_active = FALSE, 
+  ended_at = NOW() 
 WHERE id = sqlc.arg(stream_id);
 
 -- name: GetPublicStreams :many
@@ -88,4 +90,14 @@ SET
   ended_at = NOW(), 
   is_active = FALSE 
 WHERE key = sqlc.arg(key)
+  AND is_active IS DISTINCT FROM FALSE
+  AND ended_at IS NULL
+  AND started_at IS NOT NULL
 RETURNING is_vod;
+
+-- name: RemoveAllStreams :exec
+TRUNCATE streams CASCADE;
+
+-- name: CheckStreamExistsByKey :one
+SELECT 1 FROM streams 
+WHERE key = sqlc.arg(key);

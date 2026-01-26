@@ -9,6 +9,18 @@ import (
 	"context"
 )
 
+const removeAllViews = `-- name: RemoveAllViews :exec
+TRUNCATE views CASCADE
+`
+
+// RemoveAllViews
+//
+//	TRUNCATE views CASCADE
+func (q *Queries) RemoveAllViews(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, removeAllViews)
+	return err
+}
+
 const removeStreamViewers = `-- name: RemoveStreamViewers :exec
 DELETE FROM views
 WHERE stream_id = $1

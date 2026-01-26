@@ -57,3 +57,6 @@ WHERE id = sqlc.arg(user_id);
 -- name: RemoveUserByEmail :exec
 DELETE FROM users
 WHERE email = sqlc.arg(email);
+
+-- name: RemoveAllUsers :exec
+TRUNCATE users CASCADE;

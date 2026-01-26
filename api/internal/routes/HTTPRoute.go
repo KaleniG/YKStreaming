@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"log"
 	"net/http"
 
 	"ykstreaming_api/internal/db"
@@ -14,7 +15,10 @@ import (
 )
 
 func HTTPRoute(router *gin.Engine, dbStore *db.Store) {
-	sessionAuthKey := helpers.GetEnvDir("SESSION_AUTH_KEY")
+	sessionAuthKey, err := helpers.GetEnvDir("SESSION_AUTH_KEY")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	/*
 		router.Use(cors.New(cors.Config{

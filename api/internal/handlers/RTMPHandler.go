@@ -11,6 +11,7 @@ import (
 	"ykstreaming_api/internal/helpers"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
 )
 
 type rtmpPublishRequest struct {
@@ -30,12 +31,22 @@ func OnStreamPublish(dbStore *db.Store) gin.HandlerFunc {
 		}
 
 		ctx := c.Request.Context()
+
+		_, err := dbStore.Queries.CheckStreamExistsByKey(ctx, req.StreamKey)
+		if err != nil {
+			if err == pgx.ErrNoRows {
+				c.JSON(http.StatusNotFound, gin.H{"error": "the stream does not exist"})
+				return
+			}
+			log.Panic(err)
+		}
+
 		streamStarted, err := dbStore.Queries.StartStream(ctx, req.StreamKey)
 		if err != nil {
 			log.Panic(err)
 		}
 		if !streamStarted {
-			c.JSON(http.StatusForbidden, gin.H{"error": "stream key is invalid or the stream has already started"})
+			c.JSON(http.StatusForbidden, gin.H{"error": "the stream has already started or ended"})
 		}
 
 		c.Status(http.StatusOK)
@@ -51,8 +62,21 @@ func OnStreamPublishDone(dbStore *db.Store) gin.HandlerFunc {
 		}
 
 		ctx := c.Request.Context()
+		_, err := dbStore.Queries.CheckStreamExistsByKey(ctx, req.StreamKey)
+		if err != nil {
+			if err == pgx.ErrNoRows {
+				c.JSON(http.StatusNotFound, gin.H{"error": "the stream does not exist"})
+				return
+			}
+			log.Panic(err)
+		}
+
 		isVOD, err := dbStore.Queries.EndStream(ctx, req.StreamKey)
 		if err != nil {
+			if err == pgx.ErrNoRows {
+				c.JSON(http.StatusForbidden, gin.H{"error": "the stream has already ended or did not start yet"})
+				return
+			}
 			log.Panic(err)
 		}
 		if isVOD.Bool {
@@ -72,7 +96,7 @@ type rtmpUpdateRequest struct {
 	App       string `form:"app"`
 	Tcurl     string `form:"tcurl"`
 	PageUrl   string `form:"pageUrl"`
-	Time      int    `form:"time" binding:"required"`
+	Time      *int64 `form:"time"`
 	Timestamp string `form:"timestamp"`
 }
 
@@ -80,11 +104,12 @@ func OnStreamUpdate(dbStore *db.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req rtmpUpdateRequest
 		if err := c.ShouldBind(&req); err != nil {
+			log.Panic(req)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid on stream update nginx rtmp module request"})
 			return
 		}
 
-		if req.Time == 0 {
+		if req.Time != nil && *req.Time == 0 {
 			c.Status(http.StatusOK)
 			return
 		}
@@ -92,6 +117,10 @@ func OnStreamUpdate(dbStore *db.Store) gin.HandlerFunc {
 		ctx := c.Request.Context()
 		streamStatus, err := dbStore.Queries.GetStreamStatus(ctx, req.StreamKey)
 		if err != nil {
+			if err == pgx.ErrNoRows {
+				c.JSON(http.StatusNotFound, gin.H{"error": "the stream does not exist"})
+				return
+			}
 			log.Panic(err)
 		}
 
@@ -100,7 +129,10 @@ func OnStreamUpdate(dbStore *db.Store) gin.HandlerFunc {
 			return
 		}
 
-		vodsDir := helpers.GetEnvDir("VODS_DIR")
+		vodsDir, err := helpers.GetEnvDir("VODS_DIR")
+		if err != nil {
+			log.Panic(err)
+		}
 		vodFLVFilepath := vodsDir + "/" + req.StreamKey + ".flv"
 		if streamStatus.IsVod.Bool && !helpers.FileExists(vodFLVFilepath) {
 			err = requestStreamRecordingAction(req.StreamKey, StartRecording)
@@ -109,7 +141,10 @@ func OnStreamUpdate(dbStore *db.Store) gin.HandlerFunc {
 			}
 		}
 
-		liveThumbnailsLocksDir := helpers.GetEnvDir("LIVE_THUMBNAILS_LOCKS_DIR")
+		liveThumbnailsLocksDir, err := helpers.GetEnvDir("LIVE_THUMBNAILS_LOCKS_DIR")
+		if err != nil {
+			log.Panic(err)
+		}
 		lockFilepath := liveThumbnailsLocksDir + "/" + req.StreamKey + ".lock"
 
 		info, err := os.Stat(lockFilepath)
@@ -133,10 +168,14 @@ func OnStreamUpdate(dbStore *db.Store) gin.HandlerFunc {
 			log.Panic(err)
 		}
 
-		liveThumbnailsDir := helpers.GetEnvDir("LIVE_THUMBNAILS_DIR")
+		liveThumbnailsDir, err := helpers.GetEnvDir("LIVE_THUMBNAILS_DIR")
+		if err != nil {
+			log.Panic(err)
+		}
 		thumbnailFilepath := liveThumbnailsDir + "/" + req.StreamKey + ".jpg"
 		rtmpStreamURL := "rtmp://localhost/live/" + req.StreamKey
 		cmd := exec.Command(
+			"sudo",
 			"ffmpeg", "-y",
 			"-i", rtmpStreamURL,
 			"-frames:v", "1",

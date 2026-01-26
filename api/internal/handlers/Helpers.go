@@ -15,8 +15,14 @@ const (
 )
 
 func requestStreamRecordingAction(key string, action recordingAction) error {
-	controlURL := helpers.GetEnvDir("RTMP_CONTROL_URL")
-	VODRecorderName := helpers.GetEnvDir("LIVE_APP_VOD_RECORDER_NAME")
+	controlURL, err := helpers.GetEnvDir("RTMP_CONTROL_URL")
+	if err != nil {
+		log.Panic(err)
+	}
+	VODRecorderName, err := helpers.GetEnvDir("LIVE_APP_VOD_RECORDER_NAME")
+	if err != nil {
+		log.Panic(err)
+	}
 	var actionString string
 	if action == StartRecording {
 		actionString = "start"
@@ -35,7 +41,10 @@ func requestStreamRecordingAction(key string, action recordingAction) error {
 }
 
 func requestStreamStop(key string) error {
-	controlURL := helpers.GetEnvDir("RTMP_CONTROL_URL")
+	controlURL, err := helpers.GetEnvDir("RTMP_CONTROL_URL")
+	if err != nil {
+		log.Panic(err)
+	}
 	resp, err := http.Post(controlURL+"/drop/publisher?app=live&name="+key, "application/x-www-form-urlencoded", nil)
 	if err != nil {
 		return err

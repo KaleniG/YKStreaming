@@ -3,18 +3,27 @@ package helpers
 import (
 	"crypto/rand"
 	"encoding/hex"
-	"log"
+	"errors"
 	"os"
 	"strings"
 )
 
-func GenerateRandomToken(length int) (string, error) {
-	b := make([]byte, length)
+func GenerateRandomToken(length uint32) (string, error) {
+	if length == 0 {
+		return "", nil
+	}
+
+	nBytes := (length + 1) / 2
+
+	b := make([]byte, nBytes)
 	_, err := rand.Read(b)
 	if err != nil {
 		return "", err
 	}
-	return hex.EncodeToString(b), nil
+
+	s := hex.EncodeToString(b)
+
+	return s[:length], nil
 }
 
 func FileExists(path string) bool {
@@ -42,11 +51,10 @@ func FindFilesContaining(dir, substr string) ([]string, error) {
 	return result, nil
 }
 
-// TO EXECUTE ONLY AFTER SERVER INIT
-func GetEnvDir(name string) string {
+func GetEnvDir(name string) (string, error) {
 	dir := os.Getenv(name)
 	if dir == "" {
-		log.Fatal(name + " is missing")
+		return "", errors.New("server getenv is not initalized")
 	}
-	return dir
+	return dir, nil
 }

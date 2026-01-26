@@ -76,7 +76,11 @@ func GetUserStreams(dbStore *db.Store) gin.HandlerFunc {
 			log.Panic(err)
 		}
 
-		c.JSON(http.StatusOK, gin.H{"streams": streams})
+		if len(streams) == 0 {
+			c.JSON(http.StatusOK, gin.H{"streams": false})
+		} else {
+			c.JSON(http.StatusOK, gin.H{"streams": streams})
+		}
 	}
 }
 
@@ -86,6 +90,7 @@ type addStreamRequest struct {
 	File  *multipart.FileHeader `form:"thumbnail"`
 }
 
+// TODO: add thumnail file extension validation
 func AddStream(dbStore *db.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req addStreamRequest
@@ -134,7 +139,10 @@ func AddStream(dbStore *db.Store) gin.HandlerFunc {
 		}
 
 		if hasCustomThumbnailBool.Bool {
-			customThumbnailsDir := helpers.GetEnvDir("CUSTOM_THUMBNAILS_DIR")
+			customThumbnailsDir, err := helpers.GetEnvDir("CUSTOM_THUMBNAILS_DIR")
+			if err != nil {
+				log.Panic(err)
+			}
 
 			f, err := req.File.Open()
 			if err != nil {
@@ -184,7 +192,10 @@ func RemoveStream(dbStore *db.Store) gin.HandlerFunc {
 
 		if data.IsActive.Bool {
 			if data.IsVod.Bool {
-				vodsDir := helpers.GetEnvDir("VODS_DIR")
+				vodsDir, err := helpers.GetEnvDir("VODS_DIR")
+				if err != nil {
+					log.Panic(err)
+				}
 				vodFLVFilepath := vodsDir + "/" + streamKey + ".flv"
 				vodMP4Filepath := vodsDir + "/" + streamKey + ".mp4"
 
@@ -236,7 +247,10 @@ func RemoveStream(dbStore *db.Store) gin.HandlerFunc {
 		}
 
 		if data.HasCustomThumbnail.Bool {
-			customThumbnailsDir := helpers.GetEnvDir("CUSTOM_THUMBNAILS_DIR")
+			customThumbnailsDir, err := helpers.GetEnvDir("CUSTOM_THUMBNAILS_DIR")
+			if err != nil {
+				log.Panic(err)
+			}
 			customThumbnailFilepath := customThumbnailsDir + "/" + streamKey + ".jpg"
 			if helpers.FileExists(customThumbnailFilepath) {
 				err = os.Remove(customThumbnailFilepath)
@@ -250,7 +264,10 @@ func RemoveStream(dbStore *db.Store) gin.HandlerFunc {
 			}
 		}
 
-		liveThumbnailsDir := helpers.GetEnvDir("LIVE_THUMBNAILS_DIR")
+		liveThumbnailsDir, err := helpers.GetEnvDir("LIVE_THUMBNAILS_DIR")
+		if err != nil {
+			log.Panic(err)
+		}
 		liveThumbnailFilepath := liveThumbnailsDir + "/" + streamKey + ".jpg"
 		if helpers.FileExists(liveThumbnailFilepath) {
 			err = os.Remove(liveThumbnailFilepath)
@@ -263,7 +280,10 @@ func RemoveStream(dbStore *db.Store) gin.HandlerFunc {
 			// NOT HANDLED SINCE LIVE THUMBNAILS ARE MANDATORY AND NOT OPTIONAL BUT TODO
 		}
 
-		liveThumbnailsLocksDir := helpers.GetEnvDir("LIVE_THUMBNAILS_LOCKS_DIR")
+		liveThumbnailsLocksDir, err := helpers.GetEnvDir("LIVE_THUMBNAILS_LOCKS_DIR")
+		if err != nil {
+			log.Panic(err)
+		}
 		liveThumbnailLockFilepath := liveThumbnailsLocksDir + "/" + streamKey + ".lock"
 		if helpers.FileExists(liveThumbnailLockFilepath) {
 			err = os.Remove(liveThumbnailLockFilepath)
@@ -278,7 +298,10 @@ func RemoveStream(dbStore *db.Store) gin.HandlerFunc {
 
 		// JUST IN CASE THE STREAM FILES ARE NOT DELETED FOR SOME REASON
 		// MAYBE NEED TO TRACK AND LOG THIS
-		streamsDir := helpers.GetEnvDir("STREAMS_DIR")
+		streamsDir, err := helpers.GetEnvDir("STREAMS_DIR")
+		if err != nil {
+			log.Panic(err)
+		}
 		fileDirs, err := helpers.FindFilesContaining(streamsDir, streamKey)
 		for _, fileDir := range fileDirs {
 			err = os.Remove(fileDir)

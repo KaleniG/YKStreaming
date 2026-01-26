@@ -18,7 +18,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	dbStore := db.Open()
+	dbStore := db.OpenDefault()
 	defer dbStore.Close()
 
 	port := os.Getenv("PORT")

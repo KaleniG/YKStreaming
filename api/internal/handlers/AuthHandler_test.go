@@ -1,325 +1,107 @@
 package handlers_test
 
 import (
-	"context"
-	"encoding/json"
-	"log"
-	"net/http"
-	"net/http/httptest"
-	"strings"
 	"testing"
 	"ykstreaming_api/internal/helpers"
-	"ykstreaming_api/internal/test"
+	testhelpers "ykstreaming_api/internal/test/helpers"
+	testsetups "ykstreaming_api/internal/test/setups"
 
-	"github.com/go-playground/assert/v2"
+	"github.com/stretchr/testify/assert"
 )
 
-// When not logged in or signed in there shall not be any user in session or cookies
+// * When not logged in or signed in there shall not be any user in session or cookies
 func TestCheck(t *testing.T) {
-	router, dbStore := test.SetupAuthRouter()
+	// Setup
+	router, dbStore := testsetups.SetupAuthRouter()
 	defer dbStore.Close()
+	client := testhelpers.NewClient(router)
 
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/http/auth/check", nil)
-	router.ServeHTTP(w, req)
-
-	// Status code check
-	assert.Equal(t, http.StatusOK, w.Code)
-
-	// Body content check
-	var res struct {
-		User bool `json:"user"`
+	// Validation
+	{
+		client.AuthCheckExpectFail(t)
+		assert.Empty(t, client.GetCookieKey("remember_token"))
+		assert.Empty(t, client.GetSessionKey("user_id"))
 	}
-	err := json.Unmarshal([]byte(w.Body.String()), &res)
-	assert.Equal(t, nil, err)
-	assert.Equal(t, false, res.User)
-
-	// Cookies content check ("remember_token" should not be set)
-	resCookies := w.Result().Cookies()
-	for _, c := range resCookies {
-		if c.Name == "remember_token" {
-			assert.Equal(t, "", string(c.Value))
-		}
-	}
-
-	// Session content check
-	w = httptest.NewRecorder()
-	req, _ = http.NewRequest("GET", "/http/session/user_id", nil)
-	for _, c := range resCookies {
-		req.AddCookie(c)
-	}
-	router.ServeHTTP(w, req)
-	assert.Equal(t, "", w.Body.String())
 }
 
-// After the signup there shall be a user_id in the session
+// * After the signup there shall be a user_id in the session
 func TestSignup(t *testing.T) {
-	router, dbStore := test.SetupAuthRouter()
+	// Setup
+	router, dbStore := testsetups.SetupAuthRouter()
 	defer dbStore.Close()
+	client := testhelpers.NewClient(router)
 
-	client := test.NewClient(router)
-
+	// Validation
 	random, _ := helpers.GenerateRandomToken(5)
 	email := random + "@gmail.com"
+	name := random + "_name"
+	password := random + "_password"
 
-	body := `{
-		"name": "` + random + `",
-		"email": "` + email + `",
-		"password": "1234"
-	}`
+	{
+		// First signup, should be valid
+		client.SignupExpectSuccess(t, name, email, password)
 
-	// --- signup ---
-	req, _ := http.NewRequest("POST", "/http/auth/signup", strings.NewReader(body))
-	res := client.Do(req)
-	assert.Equal(t, http.StatusOK, res.Code)
+		// Cookies check
+		assert.Empty(t, client.GetCookieKey("remember_token"))
 
-	// --- auth check after signup ---
-	req, _ = http.NewRequest("POST", "/http/auth/check", nil)
-	res = client.Do(req)
-	assert.Equal(t, http.StatusOK, res.Code)
+		// Second signup, duplicate, should be invalid
+		client.SigninDuplicateExpectFail(t, name, email, password)
 
-	var authRes struct {
-		User struct {
-			Name  string `json:"name"`
-			Email string `json:"email"`
-		} `json:"user"`
+		// Cookies check
+		assert.Empty(t, client.GetCookieKey("remember_token"))
 	}
-	_ = json.Unmarshal(res.Body.Bytes(), &authRes)
-
-	assert.Equal(t, email, authRes.User.Email)
-
-	// --- duplicate signup ---
-	req, _ = http.NewRequest("POST", "/http/auth/signup", strings.NewReader(body))
-	res = client.Do(req)
-	assert.Equal(t, http.StatusConflict, res.Code)
-	var signupErr struct {
-		Param string `json:"param"`
-		Error string `json:"error"`
-	}
-	_ = json.Unmarshal(res.Body.Bytes(), &signupErr)
-
-	assert.Equal(t, "email", signupErr.Param)
-
-	// --- auth still valid---
-	req, _ = http.NewRequest("POST", "/http/auth/check", nil)
-	res = client.Do(req)
-	assert.Equal(t, http.StatusOK, res.Code)
-
-	var authRes2 struct {
-		User struct {
-			Name  string `json:"name"`
-			Email string `json:"email"`
-		} `json:"user"`
-	}
-	err := json.Unmarshal(res.Body.Bytes(), &authRes2)
-	if err != nil {
-		log.Print(err)
-	}
-
-	assert.Equal(t, email, authRes2.User.Email)
-
-	// cleanup
-	ctx := context.Background()
-	dbStore.Queries.RemoveUserByEmail(ctx, email)
 }
 
-// It starts with a signup and after that a logout
-func TestLogout(t *testing.T) {
-	router, dbStore := test.SetupAuthRouter()
-	defer dbStore.Close()
-
-	client := test.NewClient(router)
-
-	random, _ := helpers.GenerateRandomToken(5)
-	email := random + "@gmail.com"
-
-	body := `{
-		"name": "` + random + `",
-		"email": "` + email + `",
-		"password": "1234"
-	}`
-
-	// --- signup ---
-	req, _ := http.NewRequest("POST", "/http/auth/signup", strings.NewReader(body))
-	res := client.Do(req)
-	assert.Equal(t, http.StatusOK, res.Code)
-
-	// --- logout ---
-	req, _ = http.NewRequest("POST", "/http/user/logout", nil)
-	res = client.Do(req)
-	assert.Equal(t, http.StatusOK, res.Code)
-
-	// --- auth still invalid ---
-	req, _ = http.NewRequest("POST", "/http/auth/check", nil)
-	res = client.Do(req)
-	assert.Equal(t, http.StatusOK, res.Code)
-
-	var checkRes struct {
-		User bool `json:"user"`
-	}
-	_ = json.Unmarshal([]byte(res.Body.String()), &checkRes)
-	assert.Equal(t, false, checkRes.User)
-
-	// cleanup
-	ctx := context.Background()
-	dbStore.Queries.RemoveUserByEmail(ctx, email)
-}
-
-// It starts with a signup and after that two invalid logins,
-// one for each parameter and then two logins one with remember me and one without
+// * It starts with a signup and after that two invalid logins,
+// * one for each parameter and then two logins one with remember me and one without
 func TestLogin(t *testing.T) {
-	router, dbStore := test.SetupAuthRouter()
+	// Setup
+	router, dbStore := testsetups.SetupAuthRouter()
 	defer dbStore.Close()
+	client := testhelpers.NewClient(router)
 
-	client := test.NewClient(router)
-
+	// Validation
 	random, _ := helpers.GenerateRandomToken(5)
 	email := random + "@gmail.com"
+	name := random + "_name"
+	password := random + "_password"
 
-	body := `{
-		"name": "` + random + `",
-		"email": "` + email + `",
-		"password": "1234"
-	}`
+	{
+		// First signup, should be valid
+		client.SignupExpectSuccess(t, name, email, password)
 
-	// --- signup ---
-	req, _ := http.NewRequest("POST", "/http/auth/signup", strings.NewReader(body))
-	res := client.Do(req)
-	assert.Equal(t, http.StatusOK, res.Code)
+		// Cookies check
+		assert.Empty(t, client.GetCookieKey("remember_token"))
 
-	// --- logout ---
-	req, _ = http.NewRequest("POST", "/http/user/logout", nil)
-	res = client.Do(req)
-	assert.Equal(t, http.StatusOK, res.Code)
+		// Now a logout
+		client.LogoutExpectSuccess(t)
 
-	// --- login (invalid password case) ---
-	body = `{
-		"email": "` + email + `",
-		"password": "12345asds",
-		"remember_me": false
-	}`
+		// * Here start the invalid params login cases
+		// Case 1: invalid password
+		client.LoginInvalidPasswordExpectFail(t, email, password)
 
-	req, _ = http.NewRequest("POST", "/http/auth/login", strings.NewReader(body))
-	res = client.Do(req)
-	assert.Equal(t, http.StatusUnauthorized, res.Code)
-	var loginResError1 struct {
-		Param string `json:"param"`
-		Error string `json:"error"`
+		// Auth & cookie check
+		client.AuthCheckExpectFail(t)
+		assert.Empty(t, client.GetCookieKey("remember_token"))
+
+		// Case 2: invalid email
+		client.LoginInvalidEmailExpectFail(t, email, password)
+
+		// Auth & cookie check
+		client.AuthCheckExpectFail(t)
+		assert.Empty(t, client.GetCookieKey("remember_token"))
+
+		// * Here start the valid params login cases with and without remember me option
+		// Case 1: Without remember me
+		client.LoginExpectSuccess(t, email, password)
+
+		// Cookie check
+		assert.Empty(t, client.GetCookieKey("remember_token"))
+
+		// Case 2: With remember me
+		client.LoginRememberMeExpectSuccess(t, email, password)
+
+		// Now a logout again to check logout after login
+		client.LogoutExpectSuccess(t)
 	}
-	_ = json.Unmarshal(res.Body.Bytes(), &loginResError1)
-	assert.Equal(t, "password", loginResError1.Param)
-
-	// --- login (invalid email case) ---
-	body = `{
-		"email": "dsajshhd` + email + `",
-		"password": "1234",
-		"remember_me": false
-	}`
-
-	req, _ = http.NewRequest("POST", "/http/auth/login", strings.NewReader(body))
-	res = client.Do(req)
-	assert.Equal(t, http.StatusUnauthorized, res.Code)
-	var loginResError2 struct {
-		Param string `json:"param"`
-		Error string `json:"error"`
-	}
-	_ = json.Unmarshal(res.Body.Bytes(), &loginResError2)
-	assert.Equal(t, "email", loginResError2.Param)
-
-	// --- auth still invalid ---
-	req, _ = http.NewRequest("POST", "/http/auth/check", nil)
-	res = client.Do(req)
-	assert.Equal(t, http.StatusOK, res.Code)
-
-	var checkRes struct {
-		User bool `json:"user"`
-	}
-	_ = json.Unmarshal([]byte(res.Body.String()), &checkRes)
-	assert.Equal(t, false, checkRes.User)
-
-	// --- login (success case but without remembering the user) ---
-	body = `{
-		"email": "` + email + `",
-		"password": "1234",
-		"remember_me": false
-	}`
-
-	req, _ = http.NewRequest("POST", "/http/auth/login", strings.NewReader(body))
-	res = client.Do(req)
-	assert.Equal(t, http.StatusOK, res.Code)
-
-	// --- auth valid ---
-	req, _ = http.NewRequest("POST", "/http/auth/check", nil)
-	res = client.Do(req)
-
-	var authRes2 struct {
-		User struct {
-			Name  string `json:"name"`
-			Email string `json:"email"`
-		} `json:"user"`
-	}
-	_ = json.Unmarshal(res.Body.Bytes(), &authRes2)
-
-	assert.Equal(t, email, authRes2.User.Email)
-
-	// --- no remember_token in cookies ---
-	resCookies := res.Result().Cookies()
-	for _, c := range resCookies {
-		if c.Name == "remember_token" {
-			assert.Equal(t, "", string(c.Value))
-		}
-	}
-
-	// --- login (success case but remembering the user) ---
-	body = `{
-		"email": "` + email + `",
-		"password": "1234",
-		"remember_me": true
-	}`
-
-	req, _ = http.NewRequest("POST", "/http/auth/login", strings.NewReader(body))
-	res = client.Do(req)
-	assert.Equal(t, http.StatusOK, res.Code)
-
-	// --- auth valid ---
-	req, _ = http.NewRequest("POST", "/http/auth/check", nil)
-	res = client.Do(req)
-
-	var authRes3 struct {
-		User struct {
-			Name  string `json:"name"`
-			Email string `json:"email"`
-		} `json:"user"`
-	}
-	_ = json.Unmarshal(res.Body.Bytes(), &authRes3)
-
-	assert.Equal(t, email, authRes3.User.Email)
-
-	// --- remember_token in cookies ---
-	resCookies = res.Result().Cookies()
-	for _, c := range resCookies {
-		if c.Name == "remember_token" {
-			assert.NotEqual(t, "", string(c.Value))
-		}
-	}
-
-	// --- logout ---
-	req, _ = http.NewRequest("POST", "/http/user/logout", nil)
-	res = client.Do(req)
-	assert.Equal(t, http.StatusOK, res.Code)
-
-	// --- auth still invalid ---
-	req, _ = http.NewRequest("POST", "/http/auth/check", nil)
-	res = client.Do(req)
-	assert.Equal(t, http.StatusOK, res.Code)
-
-	var checkRes3 struct {
-		User bool `json:"user"`
-	}
-	_ = json.Unmarshal([]byte(res.Body.String()), &checkRes3)
-	assert.Equal(t, false, checkRes3.User)
-
-	// cleanup
-	ctx := context.Background()
-	dbStore.Queries.RemoveUserByEmail(ctx, email)
 }
