@@ -17,7 +17,7 @@ import (
 func SetupRTMPServerRouter() (*gin.Engine, *db.Store) {
 	// Starting the actual server in parallel but in test mode
 	/*
-		cmd := exec.Command("sudo", "go", "run", "./../../cmd/test/main.go")
+		cmd := exec.Command("go", "run", "./../../cmd/test/main.go")
 		cmd.Stderr = os.Stderr
 		cmd.Stdout = os.Stdout
 

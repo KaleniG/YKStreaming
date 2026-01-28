@@ -1,0 +1,42 @@
+services:
+  rtmp:
+    build: ./rtmp
+    container_name: YKRTMP
+    ports:
+      - "1935:1935"
+    volumes:
+      - /var/www/streams:/var/www/streams
+      - /var/www/vods:/var/www/vods
+    depends_on:
+      - api
+  portal:
+    build: ./portal
+    container_name: YKStreamingPortal
+    volumes:
+      - /var/www/thumbnails:/var/www/thumbnails
+      - /var/www/streams:/var/www/streams
+      - /var/www/vods:/var/www/vods
+    ports:
+      - "5173:5173"
+      - "80:80"
+    depends_on:
+      - api
+  db:
+    build: ./api/db
+    container_name: YKDB
+    environment:
+      POSTGRES_USER: babylon
+      POSTGRES_PASSWORD: SofSvi_37
+      POSTGRES_DB: ykstreaming
+    volumes:
+      - ./api/db/data:/var/lib/postgresql/data
+      - ./api/db/init:/docker-entrypoint-initdb.d
+  api:
+    build: ./api
+    container_name: YKAPI
+    volumes:
+      - /var/www/thumbnails:/var/www/thumbnails
+      - /var/www/streams:/var/www/streams
+      - /var/www/vods:/var/www/vods
+    depends_on:
+      - db

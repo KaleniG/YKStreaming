@@ -17,7 +17,7 @@ BEGIN
     LIMIT 1;
 
     IF v_stream_id IS NULL THEN
-        RETURN FALSE;
+      RETURN FALSE;
     END IF;
 
     -- 2. Insert or update the view
@@ -31,12 +31,19 @@ BEGIN
 
     -- 3. If xmax = 0, it was an insert
     IF v_xmax = 0 THEN
-        UPDATE streams
-        SET total_views = total_views + 1
-        WHERE id = v_stream_id;
+      UPDATE streams
+      SET total_views = total_views + 1
+      WHERE id = v_stream_id;
     END IF;
 
-    -- 4. Always return true because insert/update happened
+    -- 4. If less than 300 total_viewers just manually add the live_viewers
+    IF (SELECT total_views FROM streams WHERE id = v_stream_id) <= 300 THEN
+      UPDATE streams
+      SET live_viewers = live_viewers + 1
+      WHERE id = v_stream_id;
+    END IF;
+
+    -- 5. Always return true because insert/update happened
     RETURN TRUE;
 END;
 $$ LANGUAGE plpgsql;
@@ -74,12 +81,19 @@ BEGIN
 
     -- 3. If xmax = 0, it was an insert
     IF v_xmax = 0 THEN
-        UPDATE streams
-        SET total_views = total_views + 1
-        WHERE id = v_stream_id;
+      UPDATE streams
+      SET total_views = total_views + 1
+      WHERE id = v_stream_id;
     END IF;
 
-    -- 4. Always return true because insert/update happened
+    -- 4. If less than 300 total_viewers just manually add the live_viewers
+    IF (SELECT total_views FROM streams WHERE id = v_stream_id) <= 300 THEN
+      UPDATE streams
+      SET live_viewers = live_viewers + 1
+      WHERE id = v_stream_id;
+    END IF;
+
+    -- 5. Always return true because insert/update happened
     RETURN TRUE;
 END;
 $$ LANGUAGE plpgsql;
@@ -115,6 +129,12 @@ BEGIN
     AND v.is_watching IS DISTINCT FROM FALSE
   RETURNING TRUE INTO v_updated;
 
+  -- 3. If less than 300 total_viewers just manually remove the live_viewers
+  UPDATE streams
+  SET live_viewers = GREATEST(live_viewers - 1, 0)
+  WHERE id = v_stream_id
+    AND total_views <= 300;
+
   RETURN COALESCE(v_updated, FALSE);
 END;
 $$ LANGUAGE plpgsql;
@@ -149,6 +169,12 @@ BEGIN
     AND v.guest_token = p_guest_token
     AND v.is_watching IS DISTINCT FROM FALSE
   RETURNING TRUE INTO v_updated;
+
+  -- 3. If less than 300 total_viewers just manually remove the live_viewers
+  UPDATE streams
+  SET live_viewers = GREATEST(live_viewers - 1, 0)
+  WHERE id = v_stream_id
+    AND total_views <= 300;
 
   RETURN COALESCE(v_updated, FALSE);
 END;

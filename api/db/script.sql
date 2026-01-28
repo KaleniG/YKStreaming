@@ -19,6 +19,7 @@ CREATE TABLE streams (
   is_vod BOOLEAN,
   is_active BOOLEAN DEFAULT FALSE,
   total_views INTEGER DEFAULT 0,
+  live_viewers INTEGER DEFAULT 0,
   started_at TIMESTAMPTZ,
   ended_at TIMESTAMPTZ,
   user_id INT NOT NULL,

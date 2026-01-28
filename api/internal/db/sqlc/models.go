@@ -16,6 +16,7 @@ type Stream struct {
 	IsVod              pgtype.Bool        `db:"is_vod" json:"is_vod"`
 	IsActive           pgtype.Bool        `db:"is_active" json:"is_active"`
 	TotalViews         pgtype.Int4        `db:"total_views" json:"total_views"`
+	LiveViewers        pgtype.Int4        `db:"live_viewers" json:"live_viewers"`
 	StartedAt          pgtype.Timestamptz `db:"started_at" json:"started_at"`
 	EndedAt            pgtype.Timestamptz `db:"ended_at" json:"ended_at"`
 	UserID             int32              `db:"user_id" json:"user_id"`

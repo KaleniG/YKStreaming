@@ -35,7 +35,7 @@ func main() {
 	routes.HTTPRoute(router, dbStore)
 	routes.RTMPRoute(router, dbStore)
 
-	err = router.Run("localhost:" + port)
+	err = router.Run("0.0.0.0:" + port)
 	if err != nil {
 		log.Fatal(err)
 	}

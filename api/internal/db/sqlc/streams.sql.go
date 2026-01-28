@@ -97,6 +97,7 @@ SET
 WHERE key = $1
   AND is_active IS DISTINCT FROM FALSE
   AND ended_at IS NULL
+  AND started_at IS NOT NULL
 RETURNING is_vod
 `
 
@@ -109,6 +110,7 @@ RETURNING is_vod
 //	WHERE key = $1
 //	  AND is_active IS DISTINCT FROM FALSE
 //	  AND ended_at IS NULL
+//	  AND started_at IS NOT NULL
 //	RETURNING is_vod
 func (q *Queries) EndStream(ctx context.Context, key string) (pgtype.Bool, error) {
 	row := q.db.QueryRow(ctx, endStream, key)
@@ -125,10 +127,9 @@ SELECT
   s.has_custom_thumbnail,
   (s.is_active = TRUE AND s.ended_at IS NULL) AS is_live,
   s.is_vod,
-  COUNT(v.id) FILTER ( WHERE v.is_watching = TRUE) AS live_viewers
+  s.live_viewers
 FROM streams s
 JOIN users u ON s.user_id = u.id
-LEFT JOIN views v ON v.stream_id = s.id
 WHERE (s.is_active = TRUE AND s.ended_at IS NULL) OR (s.is_vod = TRUE AND s.ended_at IS NOT NULL)
 GROUP BY s.id, u.name
 `
@@ -140,7 +141,7 @@ type GetPublicStreamsRow struct {
 	HasCustomThumbnail pgtype.Bool `db:"has_custom_thumbnail" json:"has_custom_thumbnail"`
 	IsLive             pgtype.Bool `db:"is_live" json:"is_live"`
 	IsVod              pgtype.Bool `db:"is_vod" json:"is_vod"`
-	LiveViewers        int64       `db:"live_viewers" json:"live_viewers"`
+	LiveViewers        pgtype.Int4 `db:"live_viewers" json:"live_viewers"`
 }
 
 // GetPublicStreams
@@ -152,10 +153,9 @@ type GetPublicStreamsRow struct {
 //	  s.has_custom_thumbnail,
 //	  (s.is_active = TRUE AND s.ended_at IS NULL) AS is_live,
 //	  s.is_vod,
-//	  COUNT(v.id) FILTER ( WHERE v.is_watching = TRUE) AS live_viewers
+//	  s.live_viewers
 //	FROM streams s
 //	JOIN users u ON s.user_id = u.id
-//	LEFT JOIN views v ON v.stream_id = s.id
 //	WHERE (s.is_active = TRUE AND s.ended_at IS NULL) OR (s.is_vod = TRUE AND s.ended_at IS NOT NULL)
 //	GROUP BY s.id, u.name
 func (q *Queries) GetPublicStreams(ctx context.Context) ([]GetPublicStreamsRow, error) {
@@ -282,12 +282,9 @@ SELECT
   s.started_at,
   s.total_views,
   s.is_vod,
-  COUNT(v.id) FILTER (WHERE v.is_watching = TRUE) AS live_viewers
+  s.live_viewers
 FROM streams s
-LEFT JOIN views v ON v.stream_id = s.id
 WHERE s.user_id = $1
-GROUP BY s.id
-ORDER BY s.id DESC
 `
 
 type GetUserStreamsRow struct {
@@ -298,7 +295,7 @@ type GetUserStreamsRow struct {
 	StartedAt   pgtype.Timestamptz `db:"started_at" json:"started_at"`
 	TotalViews  pgtype.Int4        `db:"total_views" json:"total_views"`
 	IsVod       pgtype.Bool        `db:"is_vod" json:"is_vod"`
-	LiveViewers int64              `db:"live_viewers" json:"live_viewers"`
+	LiveViewers pgtype.Int4        `db:"live_viewers" json:"live_viewers"`
 }
 
 // GetUserStreams
@@ -311,12 +308,9 @@ type GetUserStreamsRow struct {
 //	  s.started_at,
 //	  s.total_views,
 //	  s.is_vod,
-//	  COUNT(v.id) FILTER (WHERE v.is_watching = TRUE) AS live_viewers
+//	  s.live_viewers
 //	FROM streams s
-//	LEFT JOIN views v ON v.stream_id = s.id
 //	WHERE s.user_id = $1
-//	GROUP BY s.id
-//	ORDER BY s.id DESC
 func (q *Queries) GetUserStreams(ctx context.Context, userID int32) ([]GetUserStreamsRow, error) {
 	rows, err := q.db.Query(ctx, getUserStreams, userID)
 	if err != nil {
@@ -339,6 +333,37 @@ func (q *Queries) GetUserStreams(ctx context.Context, userID int32) ([]GetUserSt
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getViewerActiveStreams = `-- name: GetViewerActiveStreams :many
+SELECT id 
+FROM streams 
+WHERE total_views >= 300
+`
+
+// GetViewerActiveStreams
+//
+//	SELECT id
+//	FROM streams
+//	WHERE total_views >= 300
+func (q *Queries) GetViewerActiveStreams(ctx context.Context) ([]int32, error) {
+	rows, err := q.db.Query(ctx, getViewerActiveStreams)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int32
+	for rows.Next() {
+		var id int32
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -405,5 +430,31 @@ WHERE id = $1
 //	WHERE id = $1
 func (q *Queries) StopStream(ctx context.Context, streamID int32) error {
 	_, err := q.db.Exec(ctx, stopStream, streamID)
+	return err
+}
+
+const updateStreamLiveViewersCountByID = `-- name: UpdateStreamLiveViewersCountByID :exec
+UPDATE streams
+SET live_viewers = (
+  SELECT COUNT(*)
+  FROM views
+  WHERE stream_id = $1
+    AND is_watching = TRUE
+)
+WHERE id = $1
+`
+
+// UpdateStreamLiveViewersCountByID
+//
+//	UPDATE streams
+//	SET live_viewers = (
+//	  SELECT COUNT(*)
+//	  FROM views
+//	  WHERE stream_id = $1
+//	    AND is_watching = TRUE
+//	)
+//	WHERE id = $1
+func (q *Queries) UpdateStreamLiveViewersCountByID(ctx context.Context, streamID int32) error {
+	_, err := q.db.Exec(ctx, updateStreamLiveViewersCountByID, streamID)
 	return err
 }

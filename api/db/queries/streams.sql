@@ -7,12 +7,9 @@ SELECT
   s.started_at,
   s.total_views,
   s.is_vod,
-  COUNT(v.id) FILTER (WHERE v.is_watching = TRUE) AS live_viewers
+  s.live_viewers
 FROM streams s
-LEFT JOIN views v ON v.stream_id = s.id
-WHERE s.user_id = sqlc.arg(user_id)
-GROUP BY s.id
-ORDER BY s.id DESC;
+WHERE s.user_id = sqlc.arg(user_id);
 
 -- name: AddStream :one
 INSERT INTO streams 
@@ -65,10 +62,9 @@ SELECT
   s.has_custom_thumbnail,
   (s.is_active = TRUE AND s.ended_at IS NULL) AS is_live,
   s.is_vod,
-  COUNT(v.id) FILTER ( WHERE v.is_watching = TRUE) AS live_viewers
+  s.live_viewers
 FROM streams s
 JOIN users u ON s.user_id = u.id
-LEFT JOIN views v ON v.stream_id = s.id
 WHERE (s.is_active = TRUE AND s.ended_at IS NULL) OR (s.is_vod = TRUE AND s.ended_at IS NOT NULL)
 GROUP BY s.id, u.name;
 
@@ -101,3 +97,18 @@ TRUNCATE streams CASCADE;
 -- name: CheckStreamExistsByKey :one
 SELECT 1 FROM streams 
 WHERE key = sqlc.arg(key);
+
+-- name: GetViewerActiveStreams :many
+SELECT id 
+FROM streams 
+WHERE total_views >= 300;
+
+-- name: UpdateStreamLiveViewersCountByID :exec
+UPDATE streams
+SET live_viewers = (
+  SELECT COUNT(*)
+  FROM views
+  WHERE stream_id = sqlc.arg(stream_id)
+    AND is_watching = TRUE
+)
+WHERE id = sqlc.arg(stream_id);

@@ -96,7 +96,7 @@ type rtmpUpdateRequest struct {
 	App       string `form:"app"`
 	Tcurl     string `form:"tcurl"`
 	PageUrl   string `form:"pageUrl"`
-	Time      *int64 `form:"time"`
+	Time      int64  `form:"time"`
 	Timestamp string `form:"timestamp"`
 }
 
@@ -109,7 +109,7 @@ func OnStreamUpdate(dbStore *db.Store) gin.HandlerFunc {
 			return
 		}
 
-		if req.Time != nil && *req.Time == 0 {
+		if req.Time == 0 {
 			c.Status(http.StatusOK)
 			return
 		}
@@ -173,9 +173,8 @@ func OnStreamUpdate(dbStore *db.Store) gin.HandlerFunc {
 			log.Panic(err)
 		}
 		thumbnailFilepath := liveThumbnailsDir + "/" + req.StreamKey + ".jpg"
-		rtmpStreamURL := "rtmp://localhost/live/" + req.StreamKey
+		rtmpStreamURL := "rtmp://rtmp:1935/live/" + req.StreamKey
 		cmd := exec.Command(
-			"sudo",
 			"ffmpeg", "-y",
 			"-i", rtmpStreamURL,
 			"-frames:v", "1",

@@ -12,7 +12,6 @@ import (
 // * Simulates an actual stream starting and going trough all the events
 func SimulateRealtimeStreamPublishing(t *testing.T, streamKey string) {
 	cmd := exec.Command(
-		"sudo",
 		"ffmpeg",
 		"-re",
 		"-f", "lavfi", "-i", "testsrc=size=640x360:rate=25",
