@@ -1,3 +1,7 @@
+networks:
+  db-net:
+    driver: bridge
+
 services:
   rtmp:
     build: ./rtmp
@@ -9,6 +13,8 @@ services:
       - /var/www/vods:/var/www/vods
     depends_on:
       - api
+    networks:
+      - db-net
   portal:
     build: ./portal
     container_name: YKStreamingPortal
@@ -21,16 +27,32 @@ services:
       - "80:80"
     depends_on:
       - api
-  db:
-    build: ./api/db
-    container_name: YKDB
+    networks:
+      - db-net
+  db-primary:
+    build: ./db-primary
+    container_name: YKDBPRIMARY
+    networks:
+      - db-net
     environment:
       POSTGRES_USER: babylon
       POSTGRES_PASSWORD: SofSvi_37
       POSTGRES_DB: ykstreaming
     volumes:
-      - ./api/db/data:/var/lib/postgresql/data
-      - ./api/db/init:/docker-entrypoint-initdb.d
+      - ./db-primary/data:/var/lib/postgresql/data
+      - ./db-primary/init:/docker-entrypoint-initdb.d
+  db-replica:
+    build: ./db-replica
+    container_name: YKDBREPLICA
+    networks:
+      - db-net
+    environment:
+      POSTGRES_USER: babylon
+      POSTGRES_PASSWORD: SofSvi_37
+      POSTGRES_DB: ykstreaming
+    volumes:
+      - ./db-replica/data:/var/lib/postgresql/data
+      - ./db-replica/init:/docker-entrypoint-initdb.d
   api:
     build: ./api
     container_name: YKAPI
@@ -39,4 +61,7 @@ services:
       - /var/www/streams:/var/www/streams
       - /var/www/vods:/var/www/vods
     depends_on:
-      - db
+      - db-primary
+      - db-replica
+    networks:
+      - db-net

@@ -65,7 +65,7 @@ func Detect(dbStore *db.Store) gin.HandlerFunc {
 				return
 			}
 
-			userID, err = dbStore.Queries.GetUserIdByRememberToken(c.Request.Context(), tokenText)
+			userID, err = dbStore.RQueries.GetUserIdByRememberToken(c.Request.Context(), tokenText)
 			if err != nil {
 				if err == pgx.ErrNoRows {
 					c.SetCookie("remember_token", "", -1, "/", "localhost", false, true)
@@ -97,7 +97,7 @@ func Detect(dbStore *db.Store) gin.HandlerFunc {
 		}
 
 		// Validate session user_id
-		_, err := dbStore.Queries.CheckUserById(c.Request.Context(), userID.(int32))
+		_, err := dbStore.RQueries.CheckUserById(c.Request.Context(), userID.(int32))
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				log.Print("Invalid session user_id cleared")

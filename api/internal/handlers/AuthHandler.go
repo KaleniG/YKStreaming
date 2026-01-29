@@ -49,7 +49,7 @@ func Check(dbStore *db.Store) gin.HandlerFunc {
 				log.Panic(err)
 			}
 
-			user, err := dbStore.Queries.GetUserDataByRememberToken(ctx, rememberTokenText)
+			user, err := dbStore.RQueries.GetUserDataByRememberToken(ctx, rememberTokenText)
 			if err != nil {
 				if err == pgx.ErrNoRows {
 					c.SetCookie("remember_token", "", -1, "/", "localhost", false, true)
@@ -69,7 +69,7 @@ func Check(dbStore *db.Store) gin.HandlerFunc {
 		}
 
 		ctx := c.Request.Context()
-		user, err := dbStore.Queries.GetUserDataById(ctx, userID.(int32))
+		user, err := dbStore.RQueries.GetUserDataById(ctx, userID.(int32))
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				session.Delete("user_id")
@@ -102,7 +102,7 @@ func Login(dbStore *db.Store) gin.HandlerFunc {
 		}
 
 		ctx := c.Request.Context()
-		user, err := dbStore.Queries.GetUserCredentialsByEmail(ctx, req.Email)
+		user, err := dbStore.RQueries.GetUserCredentialsByEmail(ctx, req.Email)
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusUnauthorized, gin.H{"param": "email", "error": "invalid email"})
@@ -137,7 +137,7 @@ func Login(dbStore *db.Store) gin.HandlerFunc {
 				UserID:        user.ID,
 			}
 
-			err = dbStore.Queries.UpdateUserRememberToken(ctx, params)
+			err = dbStore.WQueries.UpdateUserRememberToken(ctx, params)
 
 			if err != nil {
 				log.Panic(err)
@@ -177,7 +177,7 @@ func Signup(dbStore *db.Store) gin.HandlerFunc {
 		}
 
 		ctx := c.Request.Context()
-		userID, err := dbStore.Queries.AddUser(ctx, sqlc.AddUserParams{Name: req.Name, Email: req.Email, PasswordHash: string(passwordHash)})
+		userID, err := dbStore.WQueries.AddUser(ctx, sqlc.AddUserParams{Name: req.Name, Email: req.Email, PasswordHash: string(passwordHash)})
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusConflict, gin.H{"param": "email", "error": "email conflict"})

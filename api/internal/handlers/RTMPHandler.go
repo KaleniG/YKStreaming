@@ -32,7 +32,7 @@ func OnStreamPublish(dbStore *db.Store) gin.HandlerFunc {
 
 		ctx := c.Request.Context()
 
-		_, err := dbStore.Queries.CheckStreamExistsByKey(ctx, req.StreamKey)
+		_, err := dbStore.RQueries.CheckStreamExistsByKey(ctx, req.StreamKey)
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, gin.H{"error": "the stream does not exist"})
@@ -41,7 +41,7 @@ func OnStreamPublish(dbStore *db.Store) gin.HandlerFunc {
 			log.Panic(err)
 		}
 
-		streamStarted, err := dbStore.Queries.StartStream(ctx, req.StreamKey)
+		streamStarted, err := dbStore.WQueries.StartStream(ctx, req.StreamKey)
 		if err != nil {
 			log.Panic(err)
 		}
@@ -62,7 +62,7 @@ func OnStreamPublishDone(dbStore *db.Store) gin.HandlerFunc {
 		}
 
 		ctx := c.Request.Context()
-		_, err := dbStore.Queries.CheckStreamExistsByKey(ctx, req.StreamKey)
+		_, err := dbStore.RQueries.CheckStreamExistsByKey(ctx, req.StreamKey)
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, gin.H{"error": "the stream does not exist"})
@@ -71,7 +71,7 @@ func OnStreamPublishDone(dbStore *db.Store) gin.HandlerFunc {
 			log.Panic(err)
 		}
 
-		isVOD, err := dbStore.Queries.EndStream(ctx, req.StreamKey)
+		isVOD, err := dbStore.WQueries.EndStream(ctx, req.StreamKey)
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusForbidden, gin.H{"error": "the stream has already ended or did not start yet"})
@@ -115,7 +115,7 @@ func OnStreamUpdate(dbStore *db.Store) gin.HandlerFunc {
 		}
 
 		ctx := c.Request.Context()
-		streamStatus, err := dbStore.Queries.GetStreamStatus(ctx, req.StreamKey)
+		streamStatus, err := dbStore.RQueries.GetStreamStatus(ctx, req.StreamKey)
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, gin.H{"error": "the stream does not exist"})

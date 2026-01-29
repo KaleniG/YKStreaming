@@ -32,7 +32,7 @@ func Auth(dbStore *db.Store) gin.HandlerFunc {
 			}
 
 			ctx := c.Request.Context()
-			userID, err = dbStore.Queries.GetUserIdByRememberToken(ctx, rememberTokenText)
+			userID, err = dbStore.RQueries.GetUserIdByRememberToken(ctx, rememberTokenText)
 			if err != nil {
 				if err == pgx.ErrNoRows {
 					c.SetCookie("remember_token", "", -1, "/", "localhost", false, true)
@@ -52,7 +52,7 @@ func Auth(dbStore *db.Store) gin.HandlerFunc {
 		}
 
 		ctx := c.Request.Context()
-		_, err := dbStore.Queries.CheckUserById(ctx, userID.(int32))
+		_, err := dbStore.RQueries.CheckUserById(ctx, userID.(int32))
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				session.Delete("user_id")
