@@ -11,87 +11,57 @@ import (
 )
 
 type Store struct {
-	dbPrimary *pgxpool.Pool
-	dbReplica *pgxpool.Pool
-	WQueries  *sqlc.Queries
-	RQueries  *sqlc.Queries
+	db      *pgxpool.Pool
+	Queries *sqlc.Queries
 }
 
 func OpenDefault() *Store {
-	postgresPrimaryAuth := os.Getenv("POSTGRES_PRIMARY_AUTH")
-	if postgresPrimaryAuth == "" {
-		log.Fatal("POSTGRES_PRIMARY_AUTH is missing")
+	pgpoolAuth := os.Getenv("PGPOOL_AUTH")
+	if pgpoolAuth == "" {
+		log.Fatal("PGPOOL_AUTH is missing")
 	}
 
-	postgresReplicaAuth := os.Getenv("POSTGRES_READ_REPLICA_AUTH")
-	if postgresReplicaAuth == "" {
-		log.Fatal("POSTGRES_PRIMARY_AUTH is missing")
-	}
-
-	dbPrimaryConn, err := pgxpool.New(context.Background(), postgresPrimaryAuth)
+	pgpoolAuthConn, err := pgxpool.New(context.Background(), pgpoolAuth)
 	if err != nil {
-		log.Fatal("failed to connect to primary DB:", err)
-	}
-
-	dbReplicaConn, err := pgxpool.New(context.Background(), postgresPrimaryAuth)
-	if err != nil {
-		log.Fatal("failed to connect to replica DB:", err)
+		log.Fatal("failed to connect to pgpool:", err)
 	}
 
 	return &Store{
-		dbPrimary: dbPrimaryConn,
-		dbReplica: dbReplicaConn,
-		WQueries:  sqlc.New(dbPrimaryConn),
-		RQueries:  sqlc.New(dbReplicaConn),
+		db:      pgpoolAuthConn,
+		Queries: sqlc.New(pgpoolAuthConn),
 	}
 }
 
 func OpenTest() *Store {
-	postgresPrimaryAuth := os.Getenv("POSTGRES_PRIMARY_TEST_AUTH")
-	if postgresPrimaryAuth == "" {
-		log.Fatal("POSTGRES_PRIMARY_TEST_AUTH is missing")
+	pgpoolTestAuth := os.Getenv("PGPOOL_TEST_AUTH")
+	if pgpoolTestAuth == "" {
+		log.Fatal("PGPOOL_TEST_AUTH is missing")
 	}
 
-	postgresReplicaAuth := os.Getenv("POSTGRES_READ_REPLICA_TEST_AUTH")
-	if postgresReplicaAuth == "" {
-		log.Fatal("POSTGRES_READ_REPLICA_TEST_AUTH is missing")
-	}
-
-	dbPrimaryConn, err := pgxpool.New(context.Background(), postgresPrimaryAuth)
+	pgpoolTestAuthConn, err := pgxpool.New(context.Background(), pgpoolTestAuth)
 	if err != nil {
-		log.Fatal("failed to connect to primary test DB:", err)
-	}
-
-	dbReplicaConn, err := pgxpool.New(context.Background(), postgresPrimaryAuth)
-	if err != nil {
-		log.Fatal("failed to connect to replica test DB:", err)
+		log.Fatal("failed to connect to pgpool:", err)
 	}
 
 	return &Store{
-		dbPrimary: dbPrimaryConn,
-		dbReplica: dbReplicaConn,
-		WQueries:  sqlc.New(dbPrimaryConn),
-		RQueries:  sqlc.New(dbReplicaConn),
+		db:      pgpoolTestAuthConn,
+		Queries: sqlc.New(pgpoolTestAuthConn),
 	}
 }
 
 func (s *Store) Close() {
-	if s.dbPrimary != nil {
-		s.dbPrimary.Close()
-	}
-
-	if s.dbReplica != nil {
-		s.dbReplica.Close()
+	if s.db != nil {
+		s.db.Close()
 	}
 }
 
 func (s *Store) Tx(ctx context.Context, handler func(q *sqlc.Queries) error) error {
-	tx, err := s.dbPrimary.Begin(ctx)
+	tx, err := s.db.Begin(ctx)
 	if err != nil {
 		return err
 	}
 
-	qtx := s.WQueries.WithTx(tx)
+	qtx := s.Queries.WithTx(tx)
 
 	if err := handler(qtx); err != nil {
 		rollbackErr := tx.Rollback(ctx)

@@ -42,13 +42,13 @@ func Logout(dbStore *db.Store) gin.HandlerFunc {
 		if err == nil {
 			ctx := c.Request.Context()
 			if userID != nil {
-				err = dbStore.WQueries.ResetUserRememberToken(ctx, userID.(int32))
+				err = dbStore.Queries.ResetUserRememberToken(ctx, userID.(int32))
 			} else {
 				var rememberTokenText pgtype.Text
 				if err := rememberTokenText.Scan(rememberToken); err != nil {
 					log.Panic(err)
 				}
-				err = dbStore.WQueries.ResetRememberToken(ctx, rememberTokenText)
+				err = dbStore.Queries.ResetRememberToken(ctx, rememberTokenText)
 			}
 			if err != nil {
 				log.Panic(err)
@@ -71,7 +71,7 @@ func GetUserStreams(dbStore *db.Store) gin.HandlerFunc {
 		}
 
 		ctx := c.Request.Context()
-		streams, err := dbStore.RQueries.GetUserStreams(ctx, userID.(int32))
+		streams, err := dbStore.Queries.GetUserStreams(ctx, userID.(int32))
 		if err != nil {
 			log.Panic(err)
 		}
@@ -128,7 +128,7 @@ func AddStream(dbStore *db.Store) gin.HandlerFunc {
 				log.Panic(err)
 			}
 			params.Key = newKey
-			_, err = dbStore.WQueries.AddStream(ctx, params)
+			_, err = dbStore.Queries.AddStream(ctx, params)
 			if err != nil {
 				if err == pgx.ErrNoRows {
 					continue
@@ -181,7 +181,7 @@ func RemoveStream(dbStore *db.Store) gin.HandlerFunc {
 		}
 
 		ctx := c.Request.Context()
-		data, err := dbStore.RQueries.GetStreamRemovalDataByKey(ctx, streamKey)
+		data, err := dbStore.Queries.GetStreamRemovalDataByKey(ctx, streamKey)
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, gin.H{"error": "streaming key not found"})
@@ -325,7 +325,7 @@ func StopStream(dbStore *db.Store) gin.HandlerFunc {
 		}
 
 		ctx := c.Request.Context()
-		data, err := dbStore.RQueries.GetStreamStopDataByKey(ctx, streamKey)
+		data, err := dbStore.Queries.GetStreamStopDataByKey(ctx, streamKey)
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, gin.H{"error": "streaming key not found"})
@@ -347,7 +347,7 @@ func StopStream(dbStore *db.Store) gin.HandlerFunc {
 				log.Panic(err)
 			}
 
-			err = dbStore.WQueries.StopStream(ctx, data.ID)
+			err = dbStore.Queries.StopStream(ctx, data.ID)
 			if err != nil {
 				log.Panic(err)
 			}

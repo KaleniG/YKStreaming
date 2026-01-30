@@ -35,7 +35,7 @@ func main() {
 			time.Sleep(5 * time.Second)
 		}
 
-		supervisedStreams, err := dbStore.RQueries.GetViewerActiveStreams(ctx)
+		supervisedStreams, err := dbStore.Queries.GetViewerActiveStreams(ctx)
 		if err != nil {
 			log.Print(err)
 			idle = true
@@ -49,7 +49,7 @@ func main() {
 		idle = false
 
 		for _, streamID := range supervisedStreams {
-			err := dbStore.WQueries.UpdateStreamLiveViewersCountByID(ctx, streamID)
+			err := dbStore.Queries.UpdateStreamLiveViewersCountByID(ctx, streamID)
 			if err != nil {
 				log.Print(err)
 				continue

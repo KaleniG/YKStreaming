@@ -1,0 +1,17 @@
+[general]
+host = "0.0.0.0"
+port = 6433
+load_balancing_strategy = "round_robin"
+read_write_split = "include_primary"
+
+[[databases]]
+name = "ykstreaming"
+host = "db-primary"
+port = 5432
+role = "auto"
+
+[[databases]]
+name = "ykstreaming"
+host = "db-replica"
+port = 5432
+role = "auto"

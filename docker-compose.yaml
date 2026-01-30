@@ -5,7 +5,7 @@ networks:
 services:
   rtmp:
     build: ./rtmp
-    container_name: YKRTMP
+    container_name: YK_RTMP
     ports:
       - "1935:1935"
     volumes:
@@ -17,7 +17,7 @@ services:
       - db-net
   portal:
     build: ./portal
-    container_name: YKStreamingPortal
+    container_name: YK_WEB_PORTAL
     volumes:
       - /var/www/thumbnails:/var/www/thumbnails
       - /var/www/streams:/var/www/streams
@@ -31,7 +31,7 @@ services:
       - db-net
   db-primary:
     build: ./db-primary
-    container_name: YKDBPRIMARY
+    container_name: YK_DB_PRIMARY
     networks:
       - db-net
     environment:
@@ -39,29 +39,44 @@ services:
       POSTGRES_PASSWORD: SofSvi_37
       POSTGRES_DB: ykstreaming
     volumes:
-      - ./db-primary/data:/var/lib/postgresql/data
+      - db_primary_data:/var/lib/postgresql/data
       - ./db-primary/init:/docker-entrypoint-initdb.d
   db-replica:
     build: ./db-replica
-    container_name: YKDBREPLICA
+    container_name: YK_DB_REPLICA
     networks:
       - db-net
     environment:
       POSTGRES_USER: babylon
       POSTGRES_PASSWORD: SofSvi_37
       POSTGRES_DB: ykstreaming
+      POSTGRES_PRIMARY_USER: replicator
+      POSTGRES_PRIMARY_PASSWORD: SofSvi_37
     volumes:
-      - ./db-replica/data:/var/lib/postgresql/data
+      - db_replica_data:/var/lib/postgresql/data
       - ./db-replica/init:/docker-entrypoint-initdb.d
-  api:
-    build: ./api
-    container_name: YKAPI
-    volumes:
-      - /var/www/thumbnails:/var/www/thumbnails
-      - /var/www/streams:/var/www/streams
-      - /var/www/vods:/var/www/vods
+    depends_on:
+      - db-primary
+  db-manager:
+    build: ./db-manager
+    container_name: YK_DB_MANAGER
     depends_on:
       - db-primary
       - db-replica
     networks:
       - db-net
+  api:
+    build: ./api
+    container_name: YK_API
+    volumes:
+      - /var/www/thumbnails:/var/www/thumbnails
+      - /var/www/streams:/var/www/streams
+      - /var/www/vods:/var/www/vods
+    depends_on:
+      - db-manager
+    networks:
+      - db-net
+
+volumes:
+  db_primary_data:
+  db_replica_data:

@@ -16,7 +16,7 @@ import (
 func GetStreams(dbStore *db.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
-		streams, err := dbStore.RQueries.GetPublicStreams(ctx)
+		streams, err := dbStore.Queries.GetPublicStreams(ctx)
 		if err != nil {
 			log.Panic(err)
 		}
@@ -38,7 +38,7 @@ func GetStream(dbStore *db.Store) gin.HandlerFunc {
 		}
 
 		ctx := c.Request.Context()
-		stream, err := dbStore.RQueries.GetStreamStatus(ctx, streamKey)
+		stream, err := dbStore.Queries.GetStreamStatus(ctx, streamKey)
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, gin.H{"error": "invalid stream key or inaccesible stream"})
@@ -69,7 +69,7 @@ func ViewStream(dbStore *db.Store) gin.HandlerFunc {
 				StreamKey: streamKey,
 			}
 
-			streamFound, err := dbStore.WQueries.ViewStreamAsUser(ctx, params)
+			streamFound, err := dbStore.Queries.ViewStreamAsUser(ctx, params)
 			if err != nil {
 				log.Panic(err)
 			}
@@ -84,7 +84,7 @@ func ViewStream(dbStore *db.Store) gin.HandlerFunc {
 					StreamKey:  streamKey,
 				}
 
-				streamFound, err := dbStore.WQueries.ViewStreamAsGuest(ctx, params)
+				streamFound, err := dbStore.Queries.ViewStreamAsGuest(ctx, params)
 				if err != nil {
 					log.Panic(err)
 				}
@@ -117,7 +117,7 @@ func UnviewStream(dbStore *db.Store) gin.HandlerFunc {
 				StreamKey: streamKey,
 			}
 
-			err := dbStore.WQueries.UnviewStreamAsUser(ctx, params)
+			err := dbStore.Queries.UnviewStreamAsUser(ctx, params)
 			if err != nil {
 				log.Panic(err)
 			}
@@ -129,7 +129,7 @@ func UnviewStream(dbStore *db.Store) gin.HandlerFunc {
 					StreamKey:  streamKey,
 				}
 
-				err := dbStore.WQueries.UnviewStreamAsGuest(ctx, params)
+				err := dbStore.Queries.UnviewStreamAsGuest(ctx, params)
 				if err != nil {
 					log.Panic(err)
 				}
