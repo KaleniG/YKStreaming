@@ -6,12 +6,12 @@ read_write_split = "include_primary"
 
 [[databases]]
 name = "ykstreaming"
-host = "db-primary"
+host = "db-1"
 port = 5432
 role = "auto"
 
 [[databases]]
 name = "ykstreaming"
-host = "db-replica"
+host = "db-2"
 port = 5432
 role = "auto"

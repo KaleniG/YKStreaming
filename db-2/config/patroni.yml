@@ -1,0 +1,53 @@
+scope: db-cluster
+namespace: /service/
+name: db-2
+
+restapi:
+  listen: 0.0.0.0:8008
+  connect_address: 0.0.0.0:8008
+
+etcd3:
+  hosts: 
+    - etcd-1:2379
+    - etcd-2:2379
+    - etcd-3:2379
+  protocol: http
+
+bootstrap:
+  dcs:
+    ttl: 30
+    loop_wait: 10
+    retry_timeout: 10
+    maximum_lag_on_failover: 1048576
+    postgresql:
+      use_pg_rewind: true
+      pg_hba:
+        - local all all trust
+        - host replication replicator 0.0.0.0/0 md5
+        - host all all 0.0.0.0/0 md5
+  initdb:
+    - encoding: UTF8
+    - data-checksums
+  method: /var/init/init.sh
+  
+postgresql:
+  bin_dir: /usr/lib/postgresql/15/bin
+  data_dir: /var/lib/postgresql/data
+  listen: 0.0.0.0:5432
+  connect_address: db-2:5432
+  pgpass: /tmp/pgpass0
+  authentication:
+    replication:
+      username: replicator
+      password: SofSvi_37
+    superuser:
+      username: babylon
+      password: SofSvi_37
+  parameters:
+    max_connections: 100
+    shared_buffers: 256M
+
+tags:
+  nofailover: false
+  noloadbalance: false
+  clonefrom: false

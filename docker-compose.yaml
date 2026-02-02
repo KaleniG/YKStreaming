@@ -29,40 +29,54 @@ services:
       - api
     networks:
       - db-net
-  db-primary:
-    build: ./db-primary
-    container_name: YK_DB_PRIMARY
+  etcd-1:
+    build: ./etcd-1
+    container_name: YK_ETCD_1
     networks:
       - db-net
-    environment:
-      POSTGRES_USER: babylon
-      POSTGRES_PASSWORD: SofSvi_37
-      POSTGRES_DB: ykstreaming
-    volumes:
-      - db_primary_data:/var/lib/postgresql/data
-      - ./db-primary/init:/docker-entrypoint-initdb.d
-  db-replica:
-    build: ./db-replica
-    container_name: YK_DB_REPLICA
+  etcd-2:
+    build: ./etcd-2
+    container_name: YK_ETCD_2
     networks:
       - db-net
-    environment:
-      POSTGRES_USER: babylon
-      POSTGRES_PASSWORD: SofSvi_37
-      POSTGRES_DB: ykstreaming
-      POSTGRES_PRIMARY_USER: replicator
-      POSTGRES_PRIMARY_PASSWORD: SofSvi_37
-    volumes:
-      - db_replica_data:/var/lib/postgresql/data
-      - ./db-replica/init:/docker-entrypoint-initdb.d
     depends_on:
-      - db-primary
+      - etcd-1
+  etcd-3:
+    build: ./etcd-3
+    container_name: YK_ETCD_3
+    networks:
+      - db-net
+    depends_on:
+      - etcd-1
+      - etcd-2
+  db-1:
+    build: ./db-1
+    container_name: YK_DB_1
+    networks:
+      - db-net
+    depends_on:
+      - etcd-1
+      - etcd-2
+      - etcd-3
+    volumes:
+      - db_1_data:/var/lib/postgresql/data
+  db-2:
+    build: ./db-2
+    container_name: YK_DB_2
+    networks:
+      - db-net
+    depends_on:
+      - etcd-1
+      - etcd-2
+      - etcd-3
+    volumes:
+      - db_2_data:/var/lib/postgresql/data
   db-manager:
     build: ./db-manager
     container_name: YK_DB_MANAGER
     depends_on:
-      - db-primary
-      - db-replica
+      - db-1
+      - db-2
     networks:
       - db-net
   api:
@@ -78,5 +92,5 @@ services:
       - db-net
 
 volumes:
-  db_primary_data:
-  db_replica_data:
+  db_1_data:
+  db_2_data:
