@@ -4,6 +4,17 @@ port = 6433
 load_balancing_strategy = "round_robin"
 read_write_split = "include_primary"
 
+healthcheck_interval = 30_000
+idle_healthcheck_interval = 30_000
+idle_healthcheck_delay = 5_000
+
+ban_timeout = 300_000
+healthcheck_timeout = 5_000
+
+lsn_check_delay = 0
+lsn_check_interval = 5_000
+lsn_check_timeout = 5_000
+
 [[databases]]
 name = "ykstreaming"
 host = "db-1"
@@ -13,5 +24,11 @@ role = "auto"
 [[databases]]
 name = "ykstreaming"
 host = "db-2"
+port = 5432
+role = "auto"
+
+[[databases]]
+name = "ykstreaming"
+host = "db-3"
 port = 5432
 role = "auto"

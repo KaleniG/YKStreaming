@@ -1,5 +1,6 @@
 networks:
-  db-net:
+  default:
+    name: YK_DEFAULT_NETWORK
     driver: bridge
 
 services:
@@ -14,7 +15,7 @@ services:
     depends_on:
       - api
     networks:
-      - db-net
+      - default
   portal:
     build: ./portal
     container_name: YK_WEB_PORTAL
@@ -28,24 +29,24 @@ services:
     depends_on:
       - api
     networks:
-      - db-net
+      - default
   etcd-1:
     build: ./etcd-1
     container_name: YK_ETCD_1
     networks:
-      - db-net
+      - default
   etcd-2:
     build: ./etcd-2
     container_name: YK_ETCD_2
     networks:
-      - db-net
+      - default
     depends_on:
       - etcd-1
   etcd-3:
     build: ./etcd-3
     container_name: YK_ETCD_3
     networks:
-      - db-net
+      - default
     depends_on:
       - etcd-1
       - etcd-2
@@ -53,7 +54,7 @@ services:
     build: ./db-1
     container_name: YK_DB_1
     networks:
-      - db-net
+      - default
     depends_on:
       - etcd-1
       - etcd-2
@@ -64,21 +65,33 @@ services:
     build: ./db-2
     container_name: YK_DB_2
     networks:
-      - db-net
+      - default
     depends_on:
       - etcd-1
       - etcd-2
       - etcd-3
     volumes:
       - db_2_data:/var/lib/postgresql/data
+  db-3:
+    build: ./db-3
+    container_name: YK_DB_3
+    networks:
+      - default
+    depends_on:
+      - etcd-1
+      - etcd-2
+      - etcd-3
+    volumes:
+      - db_3_data:/var/lib/postgresql/data
   db-manager:
     build: ./db-manager
     container_name: YK_DB_MANAGER
     depends_on:
       - db-1
       - db-2
+      - db-3
     networks:
-      - db-net
+      - default
   api:
     build: ./api
     container_name: YK_API
@@ -89,8 +102,12 @@ services:
     depends_on:
       - db-manager
     networks:
-      - db-net
+      - default
 
 volumes:
   db_1_data:
+    name: YK_DB_1_VOLUME
   db_2_data:
+    name: YK_DB_2_VOLUME
+  db_3_data:
+    name: YK_DB_3_VOLUME

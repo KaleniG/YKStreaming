@@ -1,6 +1,6 @@
 scope: db-cluster
 namespace: /service/
-name: db-1
+name: db-3
 
 restapi:
   listen: 0.0.0.0:8008
@@ -28,12 +28,12 @@ bootstrap:
   initdb:
     - encoding: UTF8
     - data-checksums
-
+  
 postgresql:
   bin_dir: /usr/lib/postgresql/15/bin
   data_dir: /var/lib/postgresql/data
   listen: 0.0.0.0:5432
-  connect_address: db-1:5432
+  connect_address: db-3:5432
   pgpass: /tmp/pgpass0
   authentication:
     replication:

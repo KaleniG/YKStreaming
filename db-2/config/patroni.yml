@@ -28,7 +28,6 @@ bootstrap:
   initdb:
     - encoding: UTF8
     - data-checksums
-  method: /var/init/init.sh
   
 postgresql:
   bin_dir: /usr/lib/postgresql/15/bin
